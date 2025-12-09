@@ -5,14 +5,16 @@
 #include <vector>
 
 #include "talawa-ai/core/Matrix.hpp"
+#include "talawa-ai/core/Optimizer.hpp"
 #include "talawa-ai/neuralnetwork/Conv2DLayer.hpp"
 #include "talawa-ai/neuralnetwork/DenseLayer.hpp"
+#include "talawa-ai/neuralnetwork/Pooling2DLayer.hpp"
 #include "talawa-ai/neuralnetwork/Layer.hpp"
 #include "talawa-ai/neuralnetwork/Loss.hpp"
 namespace talawa_ai {
 namespace nn {
 
-using LayerConfigVariant = std::variant<DenseLayerConfig, Conv2DLayerConfig>;
+using LayerConfigVariant = std::variant<DenseLayerConfig, Conv2DLayerConfig, Pooling2DLayerConfig>;
 class NeuralNetwork;  // Forward declaration
 class NeuralNetworkBuilder {
  public:
@@ -40,7 +42,7 @@ class NeuralNetwork {
 
   std::vector<std::unique_ptr<Layer>> layers;
 
-  std::unique_ptr<Optimizer> optimizer;
+  std::unique_ptr<core::Optimizer> optimizer;
   std::unique_ptr<loss::Loss> loss_fn;
 
  private:

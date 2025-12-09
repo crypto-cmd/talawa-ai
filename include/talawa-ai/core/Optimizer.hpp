@@ -41,7 +41,7 @@ class Adam : public Optimizer {
   float beta2;
   float epsilon;
 
-  int t; // Time step
+  int t;  // Time step
 
   // State caches (Momentum and Velocity)
   // These must align 1:1 with the params vector

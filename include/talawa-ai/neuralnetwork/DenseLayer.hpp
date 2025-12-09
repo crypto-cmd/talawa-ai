@@ -17,8 +17,8 @@ struct DenseLayerConfig {
 class DenseLayer : public Layer {
  private:
   // Layer dimensions
-  int in;
-  int out;
+  size_t in;
+  size_t out;
 
   // Parameters
   core::Matrix weights;  // Shape: (input_size, output_size)
@@ -39,7 +39,8 @@ class DenseLayer : public Layer {
   core::Matrix dZ;               // To store activation gradient
 
  public:
-  DenseLayer(int input_dim, int neurons, Activation act = Activation::RELU,
+  DenseLayer(size_t input_dim, size_t neurons,
+             Activation act = Activation::RELU,
              Initializer init = Initializer::GLOROT_UNIFORM);
 
   // Core Operations

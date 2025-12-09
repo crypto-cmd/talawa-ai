@@ -89,8 +89,6 @@ float CategoricalCrossEntropyLoss::calculate(const Matrix& prediction,
       },
       0.0f);
 
-  size_t size = prediction.rows * prediction.cols;
-
   return total_loss / static_cast<float>(prediction.rows);
 }
 

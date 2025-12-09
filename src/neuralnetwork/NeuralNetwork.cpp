@@ -5,6 +5,7 @@
 #include <memory>
 #include <variant>
 
+#include "talawa-ai/core/Optimizer.hpp"
 #include "talawa-ai/neuralnetwork/Conv2DLayer.hpp"
 #include "talawa-ai/neuralnetwork/DenseLayer.hpp"
 
@@ -26,6 +27,14 @@ class LayerFactory {
       const DenseLayerConfig &cfg, const Shape &input_shape) {
     auto layer = std::make_unique<DenseLayer>(input_shape.flat(), cfg.neurons,
                                               cfg.act, cfg.init);
+    Shape next = layer->getOutputShape();
+    return {std::move(layer), next};
+  }
+  static std::pair<std::unique_ptr<Layer>, Shape> create(
+      const Pooling2DLayerConfig &cfg, const Shape &input_shape) {
+    auto layer = std::make_unique<Pooling2DLayer>(
+        input_shape.depth, input_shape.height, input_shape.width, cfg.type,
+        cfg.pool_size, cfg.stride);
     Shape next = layer->getOutputShape();
     return {std::move(layer), next};
   }

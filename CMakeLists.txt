@@ -43,7 +43,17 @@ if(LIB_SOURCES)
         # -mavx2: Enables AVX2 instructions
         # -mfma: Enables Fused Multiply-Add
         # -O3: Max optimization level (required for loop vectorization)
-        target_compile_options(talawa-ai PRIVATE -Wall -Wextra -pedantic -O3 -mavx2 -mfma)
+        # target_compile_options(talawa-ai PRIVATE -Wall -Wextra -pedantic -O3 -mavx2 -mfma)
+
+        # -march=native: Optimizes for YOUR CPU architecture (e.g. enables AVX-512)
+        # -flto: Link Time Optimization (inlines functions across object files)
+        # -funroll-loops: Aggressively unrolls loops
+        target_compile_options(talawa-ai PRIVATE
+            -Wall -Wextra -pedantic -O3 -march=native -mfma -flto -funroll-loops
+        )
+
+        # You also need to link with LTO
+        target_link_options(talawa-ai PRIVATE -flto)
     endif()
 
     message(STATUS "Library 'talawa-ai' configured with ${LIB_SOURCES}")

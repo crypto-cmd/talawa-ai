@@ -4,7 +4,7 @@
 
 namespace talawa_ai {
 namespace nn {
-DenseLayer::DenseLayer(int input_dim, int units, Activation act,
+DenseLayer::DenseLayer(size_t input_dim, size_t units, Activation act,
                        Initializer init)
     : in(input_dim), out(units) {
   // Set Hyperparameters
