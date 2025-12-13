@@ -1,12 +1,6 @@
 #pragma once
-#include <chrono>
 #include <functional>
 #include <initializer_list>
-#include <iostream>
-#include <random>
-#include <sstream>
-#include <stdexcept>
-#include <string>
 #include <vector>
 
 #include "talawa-ai/core/Error.hpp"
@@ -18,7 +12,7 @@ namespace core {
 class Matrix {
  public:
   Matrix(int rows, int cols);
-  Matrix() = default;
+  Matrix() : rows(0), cols(0) {}  // Initialize to zero instead of undefined
   Matrix(std::initializer_list<std::initializer_list<float>> values);
   Matrix(const Matrix &) = default;
   Matrix(Matrix &&) = default;

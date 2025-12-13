@@ -5,7 +5,11 @@ echo "--- Building Project ---"
 # 1. Build
 mkdir -p build && cd build
 cmake .. > /dev/null
-cmake --build .
+if [ -n "$1" ]; then
+    cmake --build . --target "$1"
+else
+    cmake --build .
+fi
 
 # Copy all files from data directory to build directory
 if [ -d "../data" ]; then

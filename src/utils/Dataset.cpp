@@ -1,5 +1,7 @@
 #include "talawa-ai/utils/Dataset.hpp"
 
+#include <random>
+#include <stdexcept>
 namespace talawa_ai {
 namespace utils {
 using namespace talawa_ai::core;

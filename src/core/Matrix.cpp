@@ -13,9 +13,7 @@
 #define PARALLEL_FOR _Pragma("omp parallel for")
 using namespace talawa_ai::core;
 
-Matrix::Matrix(int rows, int cols) : rows(rows), cols(cols) {
-  data.resize(rows * cols, 0.0f);
-}
+Matrix::Matrix(int rows, int cols) : rows(rows), cols(cols) { data.resize(rows * cols, 0.0f); }
 
 Matrix::Matrix(std::initializer_list<std::initializer_list<float>> values)
     : rows(values.size()), cols(values.begin()->size()) {
@@ -24,17 +22,16 @@ Matrix::Matrix(std::initializer_list<std::initializer_list<float>> values)
   }
 
   // Check that every row has the same number of columns
-  for (const auto &row : values) {
+  for (const auto& row : values) {
     if (row.size() != cols) {
-      throw std::invalid_argument(
-          "All rows must have the same number of columns");
+      throw std::invalid_argument("All rows must have the same number of columns");
     }
   }
 
   data.resize(rows * cols, 0.0f);
 
   int r = 0;
-  for (const auto &row : values) {
+  for (const auto& row : values) {
     int c = 0;
     for (float value : row) {
       (*this)(r, c++) = value;
@@ -46,7 +43,7 @@ Matrix::Matrix(std::initializer_list<std::initializer_list<float>> values)
 void Matrix::print(int decimals) const {
   // 1. Calculate the maximum width needed for any number in the matrix
   size_t max_width = 0;
-  for (const auto &val : data) {
+  for (const auto& val : data) {
     std::stringstream ss;
     ss << std::fixed << std::setprecision(decimals) << val;
     std::string s = ss.str();
@@ -65,8 +62,7 @@ void Matrix::print(int decimals) const {
     std::cout << "  [";  // Indent for the row
     for (size_t j = 0; j < cols; ++j) {
       // Print the number with the calculated dynamic width
-      std::cout << std::setw(width) << std::fixed << std::setprecision(decimals)
-                << (*this)(i, j);
+      std::cout << std::setw(width) << std::fixed << std::setprecision(decimals) << (*this)(i, j);
 
       // Print a comma unless it's the last column
       if (j < cols - 1) std::cout << ",";
@@ -82,16 +78,16 @@ void Matrix::print(int decimals) const {
 }
 
 // Operation overloads
-Matrix Matrix::operator+(const Matrix &other) const {
+Matrix Matrix::operator+(const Matrix& other) const {
   Matrix result = *this;  // Copy current matrix
   result += other;        // Use the += operator
   return result;
 }
-Matrix Matrix::operator-(const Matrix &other) const {
+Matrix Matrix::operator-(const Matrix& other) const {
   Matrix result(rows, cols);
-  const float *A = this->data.data();
-  const float *B = other.data.data();
-  float *C = result.data.data();
+  const float* A = this->data.data();
+  const float* B = other.data.data();
+  float* C = result.data.data();
   int size = rows * cols;
   int main_loop_limit = (size / 8) * 8;
 
@@ -109,8 +105,8 @@ Matrix Matrix::operator-(const Matrix &other) const {
 }
 Matrix Matrix::operator*(const float scalar) const {
   Matrix result(rows, cols);
-  const float *A = this->data.data();
-  float *C = result.data.data();
+  const float* A = this->data.data();
+  float* C = result.data.data();
   int size = rows * cols;
   int main_loop_limit = (size / 8) * 8;
   __m256 scalar_vec = _mm256_set1_ps(scalar);
@@ -126,7 +122,7 @@ Matrix Matrix::operator*(const float scalar) const {
   }
   return result;
 }
-Matrix &Matrix::operator=(const Matrix &other) {
+Matrix& Matrix::operator=(const Matrix& other) {
   if (this == &other) return *this;  // Self-assignment check
 
   // 1. Check if we need to resize
@@ -148,9 +144,21 @@ Matrix &Matrix::operator=(const Matrix &other) {
 }
 
 float Matrix::operator()(int row, int col) const {
+  if (row < 0 || row >= static_cast<int>(rows) || col < 0 || col >= static_cast<int>(cols)) {
+    THROW_MATRIX_ERROR("Matrix indices out of bounds: (" + std::to_string(row) + ", " +
+                       std::to_string(col) + ") for matrix of size (" + std::to_string(rows) + "x" +
+                       std::to_string(cols) + ")");
+  }
   return data[row * cols + col];
 }
-float &Matrix::operator()(int row, int col) { return data[row * cols + col]; }
+float& Matrix::operator()(int row, int col) {
+  if (row < 0 || row >= static_cast<int>(rows) || col < 0 || col >= static_cast<int>(cols)) {
+    THROW_MATRIX_ERROR("Matrix indices out of bounds: (" + std::to_string(row) + ", " +
+                       std::to_string(col) + ") for matrix of size (" + std::to_string(rows) + "x" +
+                       std::to_string(cols) + ")");
+  }
+  return data[row * cols + col];
+}
 
 void Matrix::fill(float value) { std::fill(data.begin(), data.end(), value); }
 
@@ -199,7 +207,7 @@ Matrix Matrix::random(int rows, int cols) {
   }
   return result;
 }
-Matrix &Matrix::operator=(const std::vector<std::vector<float>> &inputData) {
+Matrix& Matrix::operator=(const std::vector<std::vector<float>>& inputData) {
   if (inputData.empty()) {
     rows = 0;
     cols = 0;
@@ -210,12 +218,10 @@ Matrix &Matrix::operator=(const std::vector<std::vector<float>> &inputData) {
   const size_t target_rows = inputData.size();
   const size_t target_cols = inputData[0].size();
 
-  for (const auto &row : inputData) {
+  for (const auto& row : inputData) {
     if (row.size() != target_cols) {
-      THROW_MATRIX_ERROR("Cannot assign jagged array with row size" +
-                         std::to_string(row.size()) +
-                         " to Matrix with column size " +
-                         std::to_string(target_cols));
+      THROW_MATRIX_ERROR("Cannot assign jagged array with row size" + std::to_string(row.size()) +
+                         " to Matrix with column size " + std::to_string(target_cols));
     }
   }
 
@@ -236,8 +242,8 @@ Matrix Matrix::transpose() const {
   // Allocate the result matrix (Swap rows and cols)
   Matrix result(cols, rows);
 
-  const float *src = this->data.data();
-  float *dst = result.data.data();
+  const float* src = this->data.data();
+  float* dst = result.data.data();
 
   int n = rows;
   int m = cols;
@@ -271,11 +277,11 @@ Matrix Matrix::transpose() const {
   return result;
 }
 
-Matrix &Matrix::operator+=(const Matrix &other) {
+Matrix& Matrix::operator+=(const Matrix& other) {
   // CASE 1: Standard Element-wise Addition
   if (rows == other.rows && cols == other.cols) {
-    float *A = data.data();
-    const float *B = other.data.data();
+    float* A = data.data();
+    const float* B = other.data.data();
 
     // Total number of elements (e.g., 3000 * 3000 = 9,000,000)
     int size = rows * cols;
@@ -309,14 +315,14 @@ Matrix &Matrix::operator+=(const Matrix &other) {
   }
   // CASE 2: Broadcasting
   else if (other.rows == 1 && other.cols == cols) {
-    float *A = data.data();
-    const float *b = other.data.data();
+    float* A = data.data();
+    const float* b = other.data.data();
     int n = rows;
     int m = cols;
 
 #pragma omp parallel for
     for (int i = 0; i < n; ++i) {
-      float *row_ptr = &A[i * m];
+      float* row_ptr = &A[i * m];
       int j = 0;
 
       // AVX2 Broadcast Add
@@ -331,16 +337,15 @@ Matrix &Matrix::operator+=(const Matrix &other) {
       }
     }
   } else {
-    THROW_MATRIX_ERROR("Dimension mismatch for += operation: (" +
-                       std::to_string(rows) + "x" + std::to_string(cols) +
-                       ") += (" + std::to_string(other.rows) + "x" +
+    THROW_MATRIX_ERROR("Dimension mismatch for += operation: (" + std::to_string(rows) + "x" +
+                       std::to_string(cols) + ") += (" + std::to_string(other.rows) + "x" +
                        std::to_string(other.cols) + ")");
   }
 
   return *this;
 }
 
-bool Matrix::operator==(const Matrix &other) const {
+bool Matrix::operator==(const Matrix& other) const {
   if (rows != other.rows || cols != other.cols) {
     return false;
   }
@@ -355,14 +360,14 @@ bool Matrix::operator==(const Matrix &other) const {
 }
 
 // Optimized: Transpose directly into an existing buffer
-void Matrix::transpose(Matrix &out) const {
+void Matrix::transpose(Matrix& out) const {
   // 1. Resize if necessary (only happens once if reused)
   if (out.rows != cols || out.cols != rows) {
     out = Matrix(cols, rows);
   }
 
-  const float *src = this->data.data();
-  float *dst = out.data.data();
+  const float* src = this->data.data();
+  float* dst = out.data.data();
   int n = rows;
   int m = cols;
   const int BLOCK_SIZE = 32;
@@ -383,11 +388,10 @@ void Matrix::transpose(Matrix &out) const {
   }
 }
 
-Matrix Matrix::dot(const Matrix &other) const {
+Matrix Matrix::dot(const Matrix& other) const {
   if (cols != other.rows) {
-    THROW_MATRIX_ERROR("Dimension mismatch for dot product: (" +
-                       std::to_string(rows) + "x" + std::to_string(cols) +
-                       ") . (" + std::to_string(other.rows) + "x" +
+    THROW_MATRIX_ERROR("Dimension mismatch for dot product: (" + std::to_string(rows) + "x" +
+                       std::to_string(cols) + ") . (" + std::to_string(other.rows) + "x" +
                        std::to_string(other.cols) + ")");
   }
 
@@ -401,21 +405,21 @@ Matrix Matrix::dot(const Matrix &other) const {
   int k_dim = cols;  // Shared dimension
 
   Matrix result = Matrix::zeros(n, m);
-  float *C = result.data.data();
-  const float *A = this->data.data();
+  float* C = result.data.data();
+  const float* A = this->data.data();
 
   // --- FAST PATH (Small Matrices) ---
   if (ops < THREADING_THRESHOLD) {
-    const float *B = other.data.data();  // Read B directly (No Transpose!)
+    const float* B = other.data.data();  // Read B directly (No Transpose!)
 
     // The "ikj" loop order (Cache Friendly)
     for (int i = 0; i < n; ++i) {
-      const float *row_A = &A[i * k_dim];
-      float *row_C = &C[i * m];
+      const float* row_A = &A[i * k_dim];
+      float* row_C = &C[i * m];
 
       for (int k = 0; k < k_dim; ++k) {
         float val_A = row_A[k];
-        const float *row_B = &B[k * m];
+        const float* row_B = &B[k * m];
 
         // Compiler will auto-vectorize this simple inner loop
         for (int j = 0; j < m; ++j) {
@@ -429,19 +433,18 @@ Matrix Matrix::dot(const Matrix &other) const {
   // --- LARGE MATRIX PATH (Transposed + AVX2 + Multithreaded) ---
 
   // Only pay the 'bureaucracy' cost if the job is big enough
-  int rows_per_thread_min = 64;  // Don't spawn a thread for less than 64 rows
-  int max_threads_needed =
-      (rows + rows_per_thread_min - 1) / rows_per_thread_min;
+  int rows_per_thread_min = 16;  // Don't spawn a thread for less than 16 rows
+  int max_threads_needed = (rows + rows_per_thread_min - 1) / rows_per_thread_min;
   int hardware_threads = std::thread::hardware_concurrency();
   int available = (hardware_threads > 2) ? (hardware_threads - 2) : 1;
   num_threads = std::max(1, std::min(available, max_threads_needed));
   // Transpose B for linear memory access (Critical for SIMD)
   auto other_T = other.transpose();
-  const float *B_T = other_T.data.data();
+  const float* B_T = other_T.data.data();
 
   // TUNING PARAMETER: Fits in L1/L2 Cache.
   // 64 floats * 64 floats * 4 bytes = 16KB (Fits easily in L1)
-  const int BLOCK_SIZE = 64;
+  const int BLOCK_SIZE = std::max(16, rows_per_thread_min);
 
   // Micro-kernel blocked multiplication
 #pragma omp parallel for num_threads(num_threads)
@@ -463,13 +466,13 @@ Matrix Matrix::dot(const Matrix &other) const {
           // Pointer to the start of the current row in A
           // Offset by 'kk' because we are only processing a chunk of
           // the row
-          const float *row_A_ptr = &A[i * k_dim + kk];
+          const float* row_A_ptr = &A[i * k_dim + kk];
 
-          float *row_C_ptr = &C[i * m];
+          float* row_C_ptr = &C[i * m];
 
           for (int j = jj; j < j_max; ++j) {
             // Pointer to the start of the current row in B_T
-            const float *row_B_ptr = &B_T[j * k_dim + kk];
+            const float* row_B_ptr = &B_T[j * k_dim + kk];
 
             // AVX2 Accumulator
             __m256 sum_vec = _mm256_setzero_ps();
@@ -509,7 +512,7 @@ Matrix Matrix::dot(const Matrix &other) const {
 }
 
 // Optimized: Writes result into 'out' to avoid allocation
-void Matrix::dot(const Matrix &other, Matrix &out) const {
+void Matrix::dot(const Matrix& other, Matrix& out) const {
   // 1. Safety Checks
   if (cols != other.rows) throw std::runtime_error("Dot dimension mismatch");
   if (out.rows != rows || out.cols != other.cols) {
@@ -520,15 +523,15 @@ void Matrix::dot(const Matrix &other, Matrix &out) const {
   // 2. Reset Output
   out.fill(0.0f);
 
-  const float *A = data.data();
+  const float* A = data.data();
   // We need B transposed for the AVX2 kernel to work efficiently
   // Optimization: In a real library, we'd have a 'dotNT' kernel to avoid this
   // transpose. For now, doing this transpose is still faster than a
   // cache-miss-heavy loop.
   Matrix B_T_Mat = other.transpose();
-  const float *B_T = B_T_Mat.data.data();
+  const float* B_T = B_T_Mat.data.data();
 
-  float *C = out.data.data();
+  float* C = out.data.data();
 
   int n = rows;
   int m = other.cols;
@@ -546,11 +549,11 @@ void Matrix::dot(const Matrix &other, Matrix &out) const {
         int k_max = std::min(kk + BLOCK_SIZE, k_dim);
 
         for (int i = ii; i < i_max; ++i) {
-          const float *row_A_ptr = &A[i * k_dim + kk];
-          float *row_C_ptr = &C[i * m];
+          const float* row_A_ptr = &A[i * k_dim + kk];
+          float* row_C_ptr = &C[i * m];
 
           for (int j = jj; j < j_max; ++j) {
-            const float *row_B_ptr = &B_T[j * k_dim + kk];
+            const float* row_B_ptr = &B_T[j * k_dim + kk];
 
             __m256 sum_vec = _mm256_setzero_ps();
             int k = 0;
@@ -582,7 +585,7 @@ void Matrix::dot(const Matrix &other, Matrix &out) const {
   }
 }
 
-Matrix Matrix::addVector(const Matrix &vector) const {
+Matrix Matrix::addVector(const Matrix& vector) const {
   if (vector.rows != 1 || vector.cols != cols) {
     THROW_MATRIX_ERROR("Dimension mismatch for addVector operation.");
   }
@@ -592,15 +595,15 @@ Matrix Matrix::addVector(const Matrix &vector) const {
   return result;
 }
 
-void Matrix::sumRows(Matrix &out) const {
-  float *R = out.data.data();
-  const float *A = this->data.data();
+void Matrix::sumRows(Matrix& out) const {
+  float* R = out.data.data();
+  const float* A = this->data.data();
   int n = rows;
   int m = cols;
 
   // Row-major iteration for cache-friendly access
   for (int i = 0; i < n; ++i) {
-    const float *row_ptr = &A[i * m];
+    const float* row_ptr = &A[i * m];
     int j = 0;
     // AVX2 vectorized accumulation
     for (; j <= m - 8; j += 8) {
@@ -615,15 +618,15 @@ void Matrix::sumRows(Matrix &out) const {
   }
 }
 
-Matrix Matrix::hadamard(const Matrix &other) const {
+Matrix Matrix::hadamard(const Matrix& other) const {
   if (rows != other.rows || cols != other.cols) {
     THROW_MATRIX_ERROR("Dimension mismatch for Hadamard product.");
   }
 
   Matrix result(rows, cols);
-  const float *A = this->data.data();
-  const float *B = other.data.data();
-  float *C = result.data.data();
+  const float* A = this->data.data();
+  const float* B = other.data.data();
+  float* C = result.data.data();
   int size = rows * cols;
   int main_loop_limit = (size / 8) * 8;
 

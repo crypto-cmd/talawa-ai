@@ -1,3 +1,4 @@
+#pragma once
 #define THROW_TALAWA_AI_ERROR(type, msg)                   \
   do {                                                     \
     std::stringstream ss;                                  \

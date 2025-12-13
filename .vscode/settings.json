@@ -8,15 +8,11 @@
         "**/*.d": true,
         "**/build": true
     },
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "cmake.copyCompileCommands": "${workspaceFolder}/build/compile_commands.json",
     "terminal.integrated.cursorBlinking": true,
-    "terminal.integrated.fontSize": 14,
-    "terminal.integrated.fontFamily": "'Cascadia Code', 'Fira Code', monospace",
     "editor.renderWhitespace": "trailing", // Shows accidental spaces at end of lines
     "files.trimTrailingWhitespace": true, // Automatically deletes useless spaces on save
     "files.insertFinalNewline": true, // C++ standard requires a newline at end of file
-    "C_Cpp.inlayHints.parameterNames.enabled": true, // Shows name of parameters in function calls
     "C_Cpp.inlayHints.referenceOperator.enabled": true, // Shows & when passing by reference
     "editor.bracketPairColorization.enabled": true,
     "editor.guides.bracketPairs": "active",

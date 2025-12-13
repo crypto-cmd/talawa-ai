@@ -1,6 +1,5 @@
 # .clang-format
 BasedOnStyle: Google
-
 # Indent #pragma to current scope (useful for OpenMP pragmas)
 IndentPragmas: true
 

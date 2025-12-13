@@ -8,13 +8,14 @@
 #include "talawa-ai/core/Optimizer.hpp"
 #include "talawa-ai/neuralnetwork/Conv2DLayer.hpp"
 #include "talawa-ai/neuralnetwork/DenseLayer.hpp"
-#include "talawa-ai/neuralnetwork/Pooling2DLayer.hpp"
 #include "talawa-ai/neuralnetwork/Layer.hpp"
 #include "talawa-ai/neuralnetwork/Loss.hpp"
+#include "talawa-ai/neuralnetwork/Pooling2DLayer.hpp"
 namespace talawa_ai {
 namespace nn {
 
-using LayerConfigVariant = std::variant<DenseLayerConfig, Conv2DLayerConfig, Pooling2DLayerConfig>;
+using LayerConfigVariant =
+    std::variant<DenseLayerConfig, Conv2DLayerConfig, Pooling2DLayerConfig>;
 class NeuralNetwork;  // Forward declaration
 class NeuralNetworkBuilder {
  public:
@@ -45,7 +46,10 @@ class NeuralNetwork {
   std::unique_ptr<core::Optimizer> optimizer;
   std::unique_ptr<loss::Loss> loss_fn;
 
+  std::unique_ptr<NeuralNetwork> clone() const;
+
  private:
+  Shape get_input_shape() const;
   NeuralNetwork() = default;  // Private constructor (use Builder)
   std::vector<LayerConfigVariant> configs;
 
@@ -53,6 +57,7 @@ class NeuralNetwork {
   // prediction. This allows us to train on Linear (stable) but output Softmax
   // (user-friendly).
   std::optional<core::Activation::Type> m_optimized_act;
+  Shape input_shape = {0, 0, 0};
 };
 
 }  // namespace nn

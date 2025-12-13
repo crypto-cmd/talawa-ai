@@ -29,6 +29,17 @@ class Loss {
   virtual LossInputType getInputType() const = 0;
 };
 
+// include/talawa-ai/neuralnetwork/Loss.hpp
+
+class HuberLoss : public Loss {
+ public:
+  float calculate(const Matrix& prediction, const Matrix& target) override;
+  Matrix gradient(const Matrix& prediction, const Matrix& target) override;
+  std::string getName() const override { return "Huber Loss"; }
+  LossInputType getInputType() const override {
+    return LossInputType::RAW_VALUES;
+  }
+};
 // --- Mean Squared Error (MSE) ---
 // Best for: Regression (predicting house prices, coordinates, etc.)
 class MeanSquaredError : public Loss {
@@ -68,6 +79,20 @@ class CrossEntropyWithLogitsLoss : public Loss {
     return "Cross Entropy With Logits Loss";
   }
   LossInputType getInputType() const override { return LossInputType::LOGITS; }
+};
+
+class EmptyLoss : public Loss {
+ public:
+  float calculate(const Matrix& prediction, const Matrix& target) override {
+    return 0.0f;
+  }
+  Matrix gradient(const Matrix& prediction, const Matrix& target) override {
+    return Matrix::zeros(prediction.rows, prediction.cols);
+  }
+  std::string getName() const override { return "Empty Loss"; }
+  LossInputType getInputType() const override {
+    return LossInputType::RAW_VALUES;
+  }
 };
 }  // namespace loss
 }  // namespace nn

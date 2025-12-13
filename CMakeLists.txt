@@ -88,16 +88,16 @@ endif()
 # ==========================================
 # This looks into examples/*.cpp. For EACH file, it creates an executable.
 
-file(GLOB EXAMPLE_SOURCES "examples/*.cpp")
+file(GLOB EXAMPLE_SOURCES "examples/*.example.cpp")
 
 if(EXAMPLE_SOURCES AND TARGET talawa-ai)
     foreach(app_source ${EXAMPLE_SOURCES})
         get_filename_component(app_name ${app_source} NAME_WE)
 
-        add_executable(${app_name} ${app_source})
-        target_link_libraries(${app_name} PRIVATE talawa-ai)
+        add_executable(${app_name}.example ${app_source})
+        target_link_libraries(${app_name}.example PRIVATE talawa-ai)
 
-        message(STATUS "Added Example: ${app_name}")
+        message(STATUS "Added Example: ${app_name}.example")
     endforeach()
 endif()
 

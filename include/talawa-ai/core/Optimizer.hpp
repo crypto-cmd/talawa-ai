@@ -1,5 +1,7 @@
 #pragma once
+#include <string>
 #include <vector>
+#include <cmath>
 
 #include "talawa-ai/core/Matrix.hpp"
 
