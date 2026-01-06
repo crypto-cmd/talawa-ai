@@ -1,14 +1,14 @@
-#include "talawa-ai/core/Activation.hpp"
-#include "talawa-ai/core/Optimizer.hpp"
-#include "talawa-ai/neuralnetwork/Loss.hpp"
-#include "talawa-ai/neuralnetwork/NeuralNetwork.hpp"
-#include "talawa-ai/utils/DataLoader.hpp"
-#include "talawa-ai/utils/Timer.hpp"
+#include "talawa/core/Activation.hpp"
+#include "talawa/core/Optimizer.hpp"
+#include "talawa/neuralnetwork/Loss.hpp"
+#include "talawa/neuralnetwork/NeuralNetwork.hpp"
+#include "talawa/utils/DataLoader.hpp"
+#include "talawa/utils/Timer.hpp"
 
-using namespace talawa_ai;
-using namespace talawa_ai::nn;
-using namespace talawa_ai::core;
-using namespace talawa_ai::utils;
+using namespace talawa;
+using namespace talawa::nn;
+using namespace talawa::core;
+using namespace talawa::utils;
 
 float get_accuracy(NeuralNetwork& model, const Matrix& X, const Matrix& Y) {
   // 1. Get all predictions at once
@@ -47,13 +47,13 @@ int main() {
   auto model = NeuralNetworkBuilder::create({1, 28, 28})
                    .add(DenseLayerConfig{
                        .neurons = 128,
-                       .init = Initializer::GLOROT_UNIFORM,
                        .act = Activation::TANH,
+                       .init = Initializer::GLOROT_UNIFORM,
                    })
                    .add(DenseLayerConfig{
                        .neurons = 10,
-                       .init = Initializer::GLOROT_UNIFORM,
                        .act = Activation::SOFTMAX,
+                       .init = Initializer::GLOROT_UNIFORM,
                    })
                    .setOptimizer(std::make_unique<SGD>(0.05f))
                    .setLossFunction(std::make_unique<loss::MeanSquaredError>())
@@ -64,7 +64,7 @@ int main() {
   // Pixel values are 0-255, so we scale by 255.0f to get 0-1 range.
   try {
     auto data =
-        talawa_ai::utils::DataLoader::loadCSV("mnist_train.csv", 0, 10, 255.0f);
+        talawa::utils::DataLoader::loadCSV("mnist_train.csv", 0, 10, 255.0f);
     int epochs = 25;
     int batch_size = 16;
     int num_samples = data.features.rows;
@@ -107,7 +107,7 @@ int main() {
 
     // Load the separate test file
     auto test_data =
-        talawa_ai::utils::DataLoader::loadCSV("mnist_test.csv", 0, 10, 255.0f);
+        talawa::utils::DataLoader::loadCSV("mnist_test.csv", 0, 10, 255.0f);
 
     std::cout << "Evaluating on " << test_data.features.rows
               << " test images..." << std::endl;

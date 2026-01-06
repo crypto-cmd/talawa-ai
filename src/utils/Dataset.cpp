@@ -1,10 +1,10 @@
-#include "talawa-ai/utils/Dataset.hpp"
+#include "talawa/utils/Dataset.hpp"
 
 #include <random>
 #include <stdexcept>
-namespace talawa_ai {
+namespace talawa {
 namespace utils {
-using namespace talawa_ai::core;
+using namespace talawa::core;
 void Dataset::shuffle() {
   // Simple Fisher-Yates shuffle
   std::random_device rd;
@@ -34,4 +34,4 @@ void Dataset::splice(size_t start, size_t end, Matrix& feature_batch,
 }
 
 }  // namespace utils
-}  // namespace talawa_ai
+}  // namespace talawa

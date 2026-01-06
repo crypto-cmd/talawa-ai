@@ -1,11 +1,11 @@
-#include "talawa-ai/core/Optimizer.hpp"
+#include "talawa/core/Optimizer.hpp"
 
 #include <immintrin.h>
 
 #include <cstring>
 #include <stdexcept>
 
-namespace talawa_ai {
+namespace talawa {
 namespace core {
 
 SGD::SGD(float learning_rate) : learning_rate(learning_rate) {}
@@ -159,4 +159,4 @@ void Adam::update(const std::vector<Matrix*>& params,
 }
 
 }  // namespace core
-}  // namespace talawa_ai
+}  // namespace talawa

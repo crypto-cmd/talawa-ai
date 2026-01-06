@@ -1,9 +1,10 @@
-#include "talawa-ai/core/Matrix.hpp"
+#include "talawa/core/Matrix.hpp"
 
 #include <immintrin.h>  // Required for AVX2
 #include <omp.h>
 
 #include <algorithm>
+#include <chrono>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -11,9 +12,11 @@
 #include <thread>
 
 #define PARALLEL_FOR _Pragma("omp parallel for")
-using namespace talawa_ai::core;
+using namespace talawa::core;
 
-Matrix::Matrix(int rows, int cols) : rows(rows), cols(cols) { data.resize(rows * cols, 0.0f); }
+Matrix::Matrix(int rows, int cols) : rows(rows), cols(cols) {
+  data.resize(rows * cols, 0.0f);
+}
 
 Matrix::Matrix(std::initializer_list<std::initializer_list<float>> values)
     : rows(values.size()), cols(values.begin()->size()) {
@@ -24,7 +27,8 @@ Matrix::Matrix(std::initializer_list<std::initializer_list<float>> values)
   // Check that every row has the same number of columns
   for (const auto& row : values) {
     if (row.size() != cols) {
-      throw std::invalid_argument("All rows must have the same number of columns");
+      throw std::invalid_argument(
+          "All rows must have the same number of columns");
     }
   }
 
@@ -62,7 +66,8 @@ void Matrix::print(int decimals) const {
     std::cout << "  [";  // Indent for the row
     for (size_t j = 0; j < cols; ++j) {
       // Print the number with the calculated dynamic width
-      std::cout << std::setw(width) << std::fixed << std::setprecision(decimals) << (*this)(i, j);
+      std::cout << std::setw(width) << std::fixed << std::setprecision(decimals)
+                << (*this)(i, j);
 
       // Print a comma unless it's the last column
       if (j < cols - 1) std::cout << ",";
@@ -144,18 +149,20 @@ Matrix& Matrix::operator=(const Matrix& other) {
 }
 
 float Matrix::operator()(int row, int col) const {
-  if (row < 0 || row >= static_cast<int>(rows) || col < 0 || col >= static_cast<int>(cols)) {
-    THROW_MATRIX_ERROR("Matrix indices out of bounds: (" + std::to_string(row) + ", " +
-                       std::to_string(col) + ") for matrix of size (" + std::to_string(rows) + "x" +
-                       std::to_string(cols) + ")");
+  if (row < 0 || row >= static_cast<int>(rows) || col < 0 ||
+      col >= static_cast<int>(cols)) {
+    THROW_MATRIX_ERROR("Matrix indices out of bounds: (" + std::to_string(row) +
+                       ", " + std::to_string(col) + ") for matrix of size (" +
+                       std::to_string(rows) + "x" + std::to_string(cols) + ")");
   }
   return data[row * cols + col];
 }
 float& Matrix::operator()(int row, int col) {
-  if (row < 0 || row >= static_cast<int>(rows) || col < 0 || col >= static_cast<int>(cols)) {
-    THROW_MATRIX_ERROR("Matrix indices out of bounds: (" + std::to_string(row) + ", " +
-                       std::to_string(col) + ") for matrix of size (" + std::to_string(rows) + "x" +
-                       std::to_string(cols) + ")");
+  if (row < 0 || row >= static_cast<int>(rows) || col < 0 ||
+      col >= static_cast<int>(cols)) {
+    THROW_MATRIX_ERROR("Matrix indices out of bounds: (" + std::to_string(row) +
+                       ", " + std::to_string(col) + ") for matrix of size (" +
+                       std::to_string(rows) + "x" + std::to_string(cols) + ")");
   }
   return data[row * cols + col];
 }
@@ -220,8 +227,10 @@ Matrix& Matrix::operator=(const std::vector<std::vector<float>>& inputData) {
 
   for (const auto& row : inputData) {
     if (row.size() != target_cols) {
-      THROW_MATRIX_ERROR("Cannot assign jagged array with row size" + std::to_string(row.size()) +
-                         " to Matrix with column size " + std::to_string(target_cols));
+      THROW_MATRIX_ERROR("Cannot assign jagged array with row size" +
+                         std::to_string(row.size()) +
+                         " to Matrix with column size " +
+                         std::to_string(target_cols));
     }
   }
 
@@ -277,6 +286,7 @@ Matrix Matrix::transpose() const {
   return result;
 }
 
+const inline Matrix Matrix::Empty = Matrix(0, 0);
 Matrix& Matrix::operator+=(const Matrix& other) {
   // CASE 1: Standard Element-wise Addition
   if (rows == other.rows && cols == other.cols) {
@@ -337,8 +347,9 @@ Matrix& Matrix::operator+=(const Matrix& other) {
       }
     }
   } else {
-    THROW_MATRIX_ERROR("Dimension mismatch for += operation: (" + std::to_string(rows) + "x" +
-                       std::to_string(cols) + ") += (" + std::to_string(other.rows) + "x" +
+    THROW_MATRIX_ERROR("Dimension mismatch for += operation: (" +
+                       std::to_string(rows) + "x" + std::to_string(cols) +
+                       ") += (" + std::to_string(other.rows) + "x" +
                        std::to_string(other.cols) + ")");
   }
 
@@ -388,10 +399,15 @@ void Matrix::transpose(Matrix& out) const {
   }
 }
 
+// Profiling: cumulative time spent in Matrix::dot
+double Matrix::profiling_dot_time = 0.0;
+
 Matrix Matrix::dot(const Matrix& other) const {
+  auto t_start = std::chrono::steady_clock::now();
   if (cols != other.rows) {
-    THROW_MATRIX_ERROR("Dimension mismatch for dot product: (" + std::to_string(rows) + "x" +
-                       std::to_string(cols) + ") . (" + std::to_string(other.rows) + "x" +
+    THROW_MATRIX_ERROR("Dimension mismatch for dot product: (" +
+                       std::to_string(rows) + "x" + std::to_string(cols) +
+                       ") . (" + std::to_string(other.rows) + "x" +
                        std::to_string(other.cols) + ")");
   }
 
@@ -427,6 +443,10 @@ Matrix Matrix::dot(const Matrix& other) const {
         }
       }
     }
+    Matrix::profiling_dot_time +=
+        std::chrono::duration_cast<std::chrono::duration<double>>(
+            std::chrono::steady_clock::now() - t_start)
+            .count();
     return result;
   }
 
@@ -434,7 +454,8 @@ Matrix Matrix::dot(const Matrix& other) const {
 
   // Only pay the 'bureaucracy' cost if the job is big enough
   int rows_per_thread_min = 16;  // Don't spawn a thread for less than 16 rows
-  int max_threads_needed = (rows + rows_per_thread_min - 1) / rows_per_thread_min;
+  int max_threads_needed =
+      (rows + rows_per_thread_min - 1) / rows_per_thread_min;
   int hardware_threads = std::thread::hardware_concurrency();
   int available = (hardware_threads > 2) ? (hardware_threads - 2) : 1;
   num_threads = std::max(1, std::min(available, max_threads_needed));
@@ -513,8 +534,14 @@ Matrix Matrix::dot(const Matrix& other) const {
 
 // Optimized: Writes result into 'out' to avoid allocation
 void Matrix::dot(const Matrix& other, Matrix& out) const {
+  auto t_start = std::chrono::steady_clock::now();
   // 1. Safety Checks
-  if (cols != other.rows) throw std::runtime_error("Dot dimension mismatch");
+  if (cols != other.rows) {
+    THROW_MATRIX_ERROR("Dimension mismatch for dot product: (" +
+                       std::to_string(rows) + "x" + std::to_string(cols) +
+                       ") . (" + std::to_string(other.rows) + "x" +
+                       std::to_string(other.cols) + ")");
+  }
   if (out.rows != rows || out.cols != other.cols) {
     // Only resize if absolutely necessary (shouldn't happen in training loop)
     out = Matrix(rows, other.cols);
@@ -583,6 +610,132 @@ void Matrix::dot(const Matrix& other, Matrix& out) const {
       }
     }
   }
+  Matrix::profiling_dot_time +=
+      std::chrono::duration_cast<std::chrono::duration<double>>(
+          std::chrono::steady_clock::now() - t_start)
+          .count();
+}
+
+Matrix Matrix::dotWithBTransposed(const Matrix& B_T) const {
+  auto t_start = std::chrono::steady_clock::now();
+  // Validate dimensions: this->cols == B_T.cols (since B_T is transpose of B)
+  if (this->cols != B_T.cols) {
+    THROW_MATRIX_ERROR("Dimension mismatch for dotWithBTransposed: (" +
+                       std::to_string(rows) + "x" + std::to_string(cols) +
+                       ") . B^T(" + std::to_string(B_T.rows) + "x" +
+                       std::to_string(B_T.cols) + ")");
+  }
+  int n = this->rows;
+  int m = B_T.rows;  // number of columns in original B
+  int k_dim = this->cols;
+  Matrix result = Matrix::zeros(n, m);
+  float* C = result.data.data();
+  const float* A = this->data.data();
+  const float* BTR = B_T.data.data();
+
+  const int BLOCK_SIZE = 64;
+#pragma omp parallel for
+  for (int ii = 0; ii < n; ii += BLOCK_SIZE) {
+    for (int jj = 0; jj < m; jj += BLOCK_SIZE) {
+      for (int kk = 0; kk < k_dim; kk += BLOCK_SIZE) {
+        int i_max = std::min(ii + BLOCK_SIZE, n);
+        int j_max = std::min(jj + BLOCK_SIZE, m);
+        int k_max = std::min(kk + BLOCK_SIZE, k_dim);
+
+        for (int i = ii; i < i_max; ++i) {
+          const float* row_A_ptr = &A[i * k_dim + kk];
+          float* row_C_ptr = &C[i * m];
+
+          for (int j = jj; j < j_max; ++j) {
+            const float* row_B_ptr = &BTR[j * k_dim + kk];
+
+            __m256 sum_vec = _mm256_setzero_ps();
+            int k = 0;
+            int range = k_max - kk;
+            for (; k <= range - 8; k += 8) {
+              __m256 a_vals = _mm256_loadu_ps(&row_A_ptr[k]);
+              __m256 b_vals = _mm256_loadu_ps(&row_B_ptr[k]);
+              sum_vec = _mm256_fmadd_ps(a_vals, b_vals, sum_vec);
+            }
+            float temp[8];
+            _mm256_storeu_ps(temp, sum_vec);
+            float partial_sum = 0.0f;
+            for (int x = 0; x < 8; ++x) partial_sum += temp[x];
+            for (; k < range; ++k) {
+              partial_sum += row_A_ptr[k] * row_B_ptr[k];
+            }
+            row_C_ptr[j] += partial_sum;
+          }
+        }
+      }
+    }
+  }
+  Matrix::profiling_dot_time +=
+      std::chrono::duration_cast<std::chrono::duration<double>>(
+          std::chrono::steady_clock::now() - t_start)
+          .count();
+  return result;
+}
+
+void Matrix::dotWithBTransposed(const Matrix& B_T, Matrix& out) const {
+  auto t_start = std::chrono::steady_clock::now();
+  if (this->cols != B_T.cols)
+    throw std::runtime_error("Dimension mismatch for dotWithBTransposed");
+  if (out.rows != this->rows || out.cols != B_T.rows) {
+    out = Matrix(this->rows, B_T.rows);
+  }
+  out.fill(0.0f);
+
+  const float* A = this->data.data();
+  const float* BTR = B_T.data.data();
+  float* C = out.data.data();
+
+  int n = this->rows;
+  int m = B_T.rows;
+  int k_dim = this->cols;
+
+  const int BLOCK_SIZE = 64;
+#pragma omp parallel for
+  for (int ii = 0; ii < n; ii += BLOCK_SIZE) {
+    for (int jj = 0; jj < m; jj += BLOCK_SIZE) {
+      for (int kk = 0; kk < k_dim; kk += BLOCK_SIZE) {
+        int i_max = std::min(ii + BLOCK_SIZE, n);
+        int j_max = std::min(jj + BLOCK_SIZE, m);
+        int k_max = std::min(kk + BLOCK_SIZE, k_dim);
+
+        for (int i = ii; i < i_max; ++i) {
+          const float* row_A_ptr = &A[i * k_dim + kk];
+          float* row_C_ptr = &C[i * m];
+
+          for (int j = jj; j < j_max; ++j) {
+            const float* row_B_ptr = &BTR[j * k_dim + kk];
+
+            __m256 sum_vec = _mm256_setzero_ps();
+            int k = 0;
+            int range = k_max - kk;
+            for (; k <= range - 8; k += 8) {
+              __m256 a_vals = _mm256_loadu_ps(&row_A_ptr[k]);
+              __m256 b_vals = _mm256_loadu_ps(&row_B_ptr[k]);
+              sum_vec = _mm256_fmadd_ps(a_vals, b_vals, sum_vec);
+            }
+            float temp[8];
+            _mm256_storeu_ps(temp, sum_vec);
+            float partial_sum = 0.0f;
+            for (int x = 0; x < 8; ++x) partial_sum += temp[x];
+            for (; k < range; ++k) {
+              partial_sum += row_A_ptr[k] * row_B_ptr[k];
+            }
+            row_C_ptr[j] += partial_sum;
+          }
+        }
+      }
+    }
+  }
+  Matrix::profiling_dot_time +=
+      std::chrono::duration_cast<std::chrono::duration<double>>(
+          std::chrono::steady_clock::now() - t_start)
+          .count();
+  return;
 }
 
 Matrix Matrix::addVector(const Matrix& vector) const {

@@ -1,13 +1,13 @@
 #include <iostream>
 
-#include "talawa-ai/core/Optimizer.hpp"
-#include "talawa-ai/neuralnetwork/NeuralNetwork.hpp"
-#include "talawa-ai/utils/DataLoader.hpp"
-#include "talawa-ai/utils/Timer.hpp"
+#include "talawa/core/Optimizer.hpp"
+#include "talawa/neuralnetwork/NeuralNetwork.hpp"
+#include "talawa/utils/DataLoader.hpp"
+#include "talawa/utils/Timer.hpp"
 
-using namespace talawa_ai;
-using namespace talawa_ai::nn;
-using namespace talawa_ai::core;
+using namespace talawa;
+using namespace talawa::nn;
+using namespace talawa::core;
 
 float get_accuracy(NeuralNetwork& model, const Matrix& X, const Matrix& Y) {
   int correct = 0;
@@ -129,7 +129,7 @@ int main() {
 
   // Load the separate test file
   auto test_data =
-      talawa_ai::utils::DataLoader::loadCSV("mnist_test.csv", 0, 10, 255.0f);
+      talawa::utils::DataLoader::loadCSV("mnist_test.csv", 0, 10, 255.0f);
 
   std::cout << "Evaluating on " << test_data.features.rows << " test images..."
             << std::endl;

@@ -1,4 +1,4 @@
-#include "talawa-ai/utils/DataLoader.hpp"
+#include "talawa/utils/DataLoader.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -6,12 +6,12 @@
 #include <sstream>
 #include <stdexcept>
 
-#include "talawa-ai/utils/Dataset.hpp"
+#include "talawa/utils/Dataset.hpp"
 
-namespace talawa_ai {
+namespace talawa {
 namespace utils {
 
-using namespace talawa_ai::core;
+using namespace talawa::core;
 
 Dataset DataLoader::loadCSV(const std::string& path, int label_index,
                             int num_classes, float scale, bool skip_header) {
@@ -111,4 +111,4 @@ Dataset DataLoader::loadCSV(const std::string& path, int label_index,
 }
 
 }  // namespace utils
-}  // namespace talawa_ai
+}  // namespace talawa

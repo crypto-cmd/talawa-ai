@@ -1,8 +1,8 @@
 #include <iostream>
 
-#include "talawa-ai/core/Matrix.hpp"
+#include "talawa/core/Matrix.hpp"
 
-using namespace talawa_ai::core;
+using namespace talawa::core;
 int main() {
   Matrix m1 = Matrix::identity(3);
   Matrix m2 = m1;

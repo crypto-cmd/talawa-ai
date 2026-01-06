@@ -1,4 +1,4 @@
-#include "talawa-ai/core/Matrix.hpp"
+#include "talawa/core/Matrix.hpp"
 
 #include <omp.h>
 
@@ -8,7 +8,7 @@
 #include <functional>
 #include <iostream>
 
-using namespace talawa_ai;
+using namespace talawa;
 // Helper: Floating point comparison (since 1.000001 != 1.0)
 bool is_close(float a, float b, float epsilon = 1e-4f) {
   return std::abs(a - b) < epsilon;

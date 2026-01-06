@@ -1,16 +1,16 @@
 #include <iostream>
 #include <vector>
 
-#include "talawa-ai/core/Matrix.hpp"
-#include "talawa-ai/core/Optimizer.hpp"
-#include "talawa-ai/neuralnetwork/Conv2DLayer.hpp"
-#include "talawa-ai/neuralnetwork/DenseLayer.hpp"
-#include "talawa-ai/neuralnetwork/Loss.hpp"
-#include "talawa-ai/neuralnetwork/NeuralNetwork.hpp"
+#include "talawa/core/Matrix.hpp"
+#include "talawa/core/Optimizer.hpp"
+#include "talawa/neuralnetwork/Conv2DLayer.hpp"
+#include "talawa/neuralnetwork/DenseLayer.hpp"
+#include "talawa/neuralnetwork/Loss.hpp"
+#include "talawa/neuralnetwork/NeuralNetwork.hpp"
 
-using namespace talawa_ai;
-using namespace talawa_ai::nn;
-using namespace talawa_ai::core;
+using namespace talawa;
+using namespace talawa::nn;
+using namespace talawa::core;
 
 int main() {
   // 1. Define Network Architecture
@@ -20,13 +20,13 @@ int main() {
   auto model = NeuralNetworkBuilder::create({1, 28, 28})
                    .add(DenseLayerConfig{
                        .neurons = 128,
-                       .init = Initializer::GLOROT_UNIFORM,
                        .act = Activation::RELU,
+                       .init = Initializer::GLOROT_UNIFORM,
                    })
                    .add(DenseLayerConfig{
                        .neurons = 10,
-                       .init = Initializer::GLOROT_UNIFORM,
                        .act = Activation::SOFTMAX,
+                       .init = Initializer::GLOROT_UNIFORM,
                    })
                    .setOptimizer(std::make_unique<Adam>(0.001f))
                    .setLossFunction(
@@ -41,7 +41,7 @@ int main() {
   // 3. Dummy Data (Batch Size = 4)
   // ==========================================
   // Inputs: 4 flattened images (4 rows, 784 cols)
-  Matrix inputs = talawa_ai::core::Matrix::random(4, 784);
+  Matrix inputs = talawa::core::Matrix::random(4, 784);
 
   // Targets: One-hot encoded (4 rows, 10 cols)
   Matrix targets(4, 10);

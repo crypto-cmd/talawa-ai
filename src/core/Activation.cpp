@@ -1,4 +1,4 @@
-#include "talawa-ai/core/Activation.hpp"
+#include "talawa/core/Activation.hpp"
 
 #include <immintrin.h>
 
@@ -7,7 +7,7 @@
 #include <cstring>
 #include <stdexcept>
 
-namespace talawa_ai {
+namespace talawa {
 namespace core {
 const float EPSILON = 1e-7f;
 
@@ -279,4 +279,4 @@ std::string Activation::getName() const {
 }
 
 }  // namespace core
-}  // namespace talawa_ai
+}  // namespace talawa

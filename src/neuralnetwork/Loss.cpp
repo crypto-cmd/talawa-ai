@@ -1,4 +1,4 @@
-#include "talawa-ai/neuralnetwork/Loss.hpp"
+#include "talawa/neuralnetwork/Loss.hpp"
 
 #include <immintrin.h>
 #include <omp.h>
@@ -7,10 +7,10 @@
 #include <cmath>
 #include <iostream>
 
-namespace talawa_ai {
+namespace talawa {
 namespace nn {
 namespace loss {
-using namespace talawa_ai::core;
+using namespace talawa::core;
 
 // Small epsilon to prevent division by zero or log(0)
 const float EPSILON = 1e-7f;
@@ -188,45 +188,45 @@ Matrix CrossEntropyWithLogitsLoss::gradient(const Matrix& prediction,
 }
 
 float HuberLoss::calculate(const Matrix& prediction, const Matrix& target) {
-    float delta = 1.0f; // Can be tunable
-    float total_loss = prediction.reduce<float>(
-        [&](float acc, int row, int col, float pred_val) {
-            float true_val = target(row, col);
-            float error = std::abs(true_val - pred_val);
+  float delta = 1.0f;  // Can be tunable
+  float total_loss = prediction.reduce<float>(
+      [&](float acc, int row, int col, float pred_val) {
+        float true_val = target(row, col);
+        float error = std::abs(true_val - pred_val);
 
-            if (error <= delta) {
-                return acc + 0.5f * error * error;
-            } else {
-                return acc + delta * (error - 0.5f * delta);
-            }
-        },
-        0.0f);
+        if (error <= delta) {
+          return acc + 0.5f * error * error;
+        } else {
+          return acc + delta * (error - 0.5f * delta);
+        }
+      },
+      0.0f);
 
-    return total_loss / static_cast<float>(prediction.rows * prediction.cols);
+  return total_loss / static_cast<float>(prediction.rows * prediction.cols);
 }
 
 Matrix HuberLoss::gradient(const Matrix& prediction, const Matrix& target) {
-    // Gradient:
-    //   error              if |error| <= delta
-    //   delta * sign(error)  otherwise
+  // Gradient:
+  //   error              if |error| <= delta
+  //   delta * sign(error)  otherwise
 
-    float delta = 1.0f;
-    float n = static_cast<float>(prediction.rows * prediction.cols);
-    // Usually we average the gradient over the batch
-    float scale = 1.0f / n;
+  float delta = 1.0f;
+  float n = static_cast<float>(prediction.rows * prediction.cols);
+  // Usually we average the gradient over the batch
+  float scale = 1.0f / n;
 
-    return prediction.map([&](int row, int col, float pred_val) {
-        float true_val = target(row, col);
-        float diff = pred_val - true_val; // (y - t)
+  return prediction.map([&](int row, int col, float pred_val) {
+    float true_val = target(row, col);
+    float diff = pred_val - true_val;  // (y - t)
 
-        if (std::abs(diff) <= delta) {
-            return diff * scale;
-        } else {
-            return (diff > 0 ? delta : -delta) * scale;
-        }
-    });
+    if (std::abs(diff) <= delta) {
+      return diff * scale;
+    } else {
+      return (diff > 0 ? delta : -delta) * scale;
+    }
+  });
 }
 
 }  // namespace loss
 }  // namespace nn
-}  // namespace talawa_ai
+}  // namespace talawa

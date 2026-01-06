@@ -7,6 +7,10 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_COMPILER g++-13)
 set(CMAKE_CXX_EXTENSIONS OFF) # Forces -std=c++23 instead of -std=gnu++23
+set(CMAKE_MESSAGE_LOG_LEVEL "ERROR")
+
+# Allow building as shared (.so) when requested
+option(BUILD_SHARED_LIBS "Build shared libraries (ON for .so, OFF for static .a)" OFF)
 
 # 2. Source Code Auto-Discovery
 # 'GLOB_RECURSE' searches for any .cpp file inside src/
@@ -22,13 +26,21 @@ else()
     message(WARNING "OpenMP not found. Matrix operations will be single-threaded.")
 endif()
 
+find_package(raylib REQUIRED)
+if(raylib_FOUND)
+    message(STATUS "raylib Found! Enabling raylib support.")
+else()
+    message(WARNING "raylib not found. raylib-based examples will not build.")
+endif()
+
 # 3. Create the Library (Only if sources exist)
 if(LIB_SOURCES)
     add_library(talawa-ai ${LIB_SOURCES})
 
-    # Define where the headers are
+    # Define where the headers are (use BUILD/INSTALL interface to be export-friendly)
     target_include_directories(talawa-ai PUBLIC
-        "${PROJECT_SOURCE_DIR}/include"
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
     )
 
     # Compiler warnings
@@ -57,6 +69,16 @@ if(LIB_SOURCES)
     endif()
 
     message(STATUS "Library 'talawa-ai' configured with ${LIB_SOURCES}")
+
+    # Ensure position-independent code (PIC) so library can be linked into shared objects
+    set_target_properties(talawa-ai PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+    # Put library artifacts in the top-level build directory for convenience
+    set_target_properties(talawa-ai PROPERTIES
+        ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
 else()
     message(WARNING "No source files found in src/. Library 'talawa-ai' will NOT be built.")
 endif()
@@ -77,7 +99,7 @@ if(TEST_SOURCES AND TARGET talawa-ai)
         add_executable(${test_name}.test ${test_source})
 
         # Link it to your library
-        target_link_libraries(${test_name}.test PRIVATE talawa-ai)
+        target_link_libraries(${test_name}.test PRIVATE talawa-ai raylib)
 
         message(STATUS "Added Test: ${test_name}.test")
     endforeach()
@@ -95,7 +117,7 @@ if(EXAMPLE_SOURCES AND TARGET talawa-ai)
         get_filename_component(app_name ${app_source} NAME_WE)
 
         add_executable(${app_name}.example ${app_source})
-        target_link_libraries(${app_name}.example PRIVATE talawa-ai)
+        target_link_libraries(${app_name}.example PRIVATE talawa-ai raylib)
 
         message(STATUS "Added Example: ${app_name}.example")
     endforeach()
@@ -112,7 +134,7 @@ if(BENCHMARK_SOURCES AND TARGET talawa-ai)
         get_filename_component(bench_name ${bench_source} NAME_WE)
 
         add_executable(${bench_name}.benchmark ${bench_source})
-        target_link_libraries(${bench_name}.benchmark PRIVATE talawa-ai)
+        target_link_libraries(${bench_name}.benchmark PRIVATE talawa-ai raylib)
 
         message(STATUS "Added Benchmark: ${bench_name}.benchmark")
     endforeach()

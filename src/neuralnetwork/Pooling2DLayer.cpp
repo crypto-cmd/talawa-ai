@@ -1,4 +1,4 @@
-#include "talawa-ai/neuralnetwork/Pooling2DLayer.hpp"
+#include "talawa/neuralnetwork/Pooling2DLayer.hpp"
 
 #include <omp.h>
 
@@ -7,10 +7,21 @@
 #include <limits>
 #include <sstream>
 
-namespace talawa_ai {
+namespace talawa {
 namespace nn {
 
 using namespace core;
+
+// Default constructor for load-time construction
+Pooling2DLayer::Pooling2DLayer()
+    : depth(0),
+      input_height(0),
+      input_width(0),
+      type(PoolingType::MAX),
+      pool_size(2),
+      stride(2),
+      output_height(0),
+      output_width(0) {}
 
 Pooling2DLayer::Pooling2DLayer(int d, int h, int w, PoolingType type, int ps,
                                int s)
@@ -20,6 +31,30 @@ Pooling2DLayer::Pooling2DLayer(int d, int h, int w, PoolingType type, int ps,
       type(type),
       pool_size(ps),
       stride(s) {
+  output_height = (input_height - pool_size) / stride + 1;
+  output_width = (input_width - pool_size) / stride + 1;
+  this->activation = Activation::LINEAR;
+}
+
+void Pooling2DLayer::save(std::ostream& out) const {
+  out.write(reinterpret_cast<const char*>(&depth), sizeof(int));
+  out.write(reinterpret_cast<const char*>(&input_height), sizeof(int));
+  out.write(reinterpret_cast<const char*>(&input_width), sizeof(int));
+  int pt = static_cast<int>(type);
+  out.write(reinterpret_cast<const char*>(&pt), sizeof(int));
+  out.write(reinterpret_cast<const char*>(&pool_size), sizeof(int));
+  out.write(reinterpret_cast<const char*>(&stride), sizeof(int));
+}
+
+void Pooling2DLayer::load(std::istream& in_stream) {
+  in_stream.read(reinterpret_cast<char*>(&depth), sizeof(int));
+  in_stream.read(reinterpret_cast<char*>(&input_height), sizeof(int));
+  in_stream.read(reinterpret_cast<char*>(&input_width), sizeof(int));
+  int pt;
+  in_stream.read(reinterpret_cast<char*>(&pt), sizeof(int));
+  this->type = static_cast<PoolingType>(pt);
+  in_stream.read(reinterpret_cast<char*>(&pool_size), sizeof(int));
+  in_stream.read(reinterpret_cast<char*>(&stride), sizeof(int));
   output_height = (input_height - pool_size) / stride + 1;
   output_width = (input_width - pool_size) / stride + 1;
   this->activation = Activation::LINEAR;
@@ -162,4 +197,4 @@ std::string Pooling2DLayer::info() const {
 }
 
 }  // namespace nn
-}  // namespace talawa_ai
+}  // namespace talawa

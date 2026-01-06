@@ -1,9 +1,13 @@
-#include "talawa-ai/neuralnetwork/DenseLayer.hpp"
+#include "talawa/neuralnetwork/DenseLayer.hpp"
 
+#include <iostream>
 #include <sstream>
 
-namespace talawa_ai {
+namespace talawa {
 namespace nn {
+// Default constructor for load-time construction
+DenseLayer::DenseLayer() : in(0), out(0) {}
+
 DenseLayer::DenseLayer(size_t input_dim, size_t units, Activation act,
                        Initializer init)
     : in(input_dim), out(units) {
@@ -24,7 +28,72 @@ DenseLayer::DenseLayer(size_t input_dim, size_t units, Activation act,
   biases_grad = Matrix(1, units);
 }
 
-Matrix DenseLayer::forward(const Matrix &input, bool is_training) {
+void DenseLayer::save(std::ostream& out) const {
+  // Write dimensions
+  out.write(reinterpret_cast<const char*>(&this->in), sizeof(size_t));
+  out.write(reinterpret_cast<const char*>(&this->out), sizeof(size_t));
+
+  // Activation type
+  int act = static_cast<int>(activation.type);
+  out.write(reinterpret_cast<const char*>(&act), sizeof(int));
+
+  // Save weights
+  size_t w_rows = weights.rows;
+  size_t w_cols = weights.cols;
+  out.write(reinterpret_cast<const char*>(&w_rows), sizeof(size_t));
+  out.write(reinterpret_cast<const char*>(&w_cols), sizeof(size_t));
+  size_t w_count = w_rows * w_cols;
+  out.write(reinterpret_cast<const char*>(weights.rawData()),
+            w_count * sizeof(float));
+
+  // Save biases
+  size_t b_rows = biases.rows;
+  size_t b_cols = biases.cols;
+  out.write(reinterpret_cast<const char*>(&b_rows), sizeof(size_t));
+  out.write(reinterpret_cast<const char*>(&b_cols), sizeof(size_t));
+  size_t b_count = b_rows * b_cols;
+  out.write(reinterpret_cast<const char*>(biases.rawData()),
+            b_count * sizeof(float));
+}
+
+void DenseLayer::load(std::istream& in_stream) {
+  // Read dimensions
+  size_t in_dim, out_dim;
+  in_stream.read(reinterpret_cast<char*>(&in_dim), sizeof(size_t));
+  in_stream.read(reinterpret_cast<char*>(&out_dim), sizeof(size_t));
+  this->in = in_dim;
+  this->out = out_dim;
+
+  // Activation
+  int act;
+  in_stream.read(reinterpret_cast<char*>(&act), sizeof(int));
+  this->activation = Activation(static_cast<Activation::Type>(act));
+
+  // Read weights
+  size_t w_rows, w_cols;
+  in_stream.read(reinterpret_cast<char*>(&w_rows), sizeof(size_t));
+  in_stream.read(reinterpret_cast<char*>(&w_cols), sizeof(size_t));
+  this->weights = Matrix(static_cast<int>(w_rows), static_cast<int>(w_cols));
+  size_t w_count = w_rows * w_cols;
+  in_stream.read(reinterpret_cast<char*>(this->weights.rawData()),
+                 w_count * sizeof(float));
+
+  // Read biases
+  size_t b_rows, b_cols;
+  in_stream.read(reinterpret_cast<char*>(&b_rows), sizeof(size_t));
+  in_stream.read(reinterpret_cast<char*>(&b_cols), sizeof(size_t));
+  this->biases = Matrix(static_cast<int>(b_rows), static_cast<int>(b_cols));
+  size_t b_count = b_rows * b_cols;
+  in_stream.read(reinterpret_cast<char*>(this->biases.rawData()),
+                 b_count * sizeof(float));
+
+  // Recreate gradients and caches
+  this->weights_grad =
+      Matrix(static_cast<int>(in_dim), static_cast<int>(out_dim));
+  this->biases_grad = Matrix(1, static_cast<int>(out_dim));
+}
+
+Matrix DenseLayer::forward(const Matrix& input, bool is_training) {
   if (is_training) {
     this->input_cache = input;
   }
@@ -48,7 +117,7 @@ Matrix DenseLayer::forward(const Matrix &input, bool is_training) {
   return a;
 }
 
-Matrix DenseLayer::backward(const Matrix &outputGradients) {
+Matrix DenseLayer::backward(const Matrix& outputGradients) {
   // 1. Calculate dL/dZ (Gradient through Activation)
   activation.backprop(a_cache, outputGradients, this->dZ);
 
@@ -72,11 +141,9 @@ Matrix DenseLayer::backward(const Matrix &outputGradients) {
 }
 
 // --- Optimizers  ---
-std::vector<Matrix *> DenseLayer::getParameters() {
-  return {&weights, &biases};
-}
+std::vector<Matrix*> DenseLayer::getParameters() { return {&weights, &biases}; }
 
-std::vector<Matrix *> DenseLayer::getParameterGradients() {
+std::vector<Matrix*> DenseLayer::getParameterGradients() {
   return {&weights_grad, &biases_grad};
 }
 
@@ -93,9 +160,5 @@ std::string DenseLayer::info() const {
   return ss.str();
 }
 
-void DenseLayer::save(std::ostream &) const { return; }
-
-void DenseLayer::load(std::istream &) { return; }
-
 }  // namespace nn
-}  // namespace talawa_ai
+}  // namespace talawa

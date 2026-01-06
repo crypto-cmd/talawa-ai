@@ -1,12 +1,12 @@
-#include "talawa-ai/core/Matrix.hpp"
+#include "talawa/core/Matrix.hpp"
 
 #include <vector>
 
-#include "talawa-ai/utils/Timer.hpp"
+#include "talawa/utils/Timer.hpp"
 
 // A "sink" function that prevents the compiler from optimizing away the
 // variable
-void do_not_optimize(const talawa_ai::core::Matrix& m) {
+void do_not_optimize(const talawa::core::Matrix& m) {
   volatile float sum = 0;
   // We just need to read one value to force the calculation
   if (m.rows > 0 && m.cols > 0) {
@@ -15,7 +15,7 @@ void do_not_optimize(const talawa_ai::core::Matrix& m) {
 }
 
 void benchmark_multiplication(int size) {
-  using namespace talawa_ai::core;
+  using namespace talawa::core;
 
   // Initialize with random data so compiler doesn't optimize it away
   Matrix a(size, size);
