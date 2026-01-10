@@ -1,15 +1,17 @@
 #pragma once
 #include <cmath>
+#include <memory>
 #include <string>
 #include <vector>
 
 #include "talawa/core/Matrix.hpp"
+#include "talawa/rl/IAgent.hpp"
 
 namespace talawa {
 namespace core {
 
 // --- Base Optimizer Interface ---
-class Optimizer {
+class Optimizer : public rl::agent::ILearnable {
  public:
   virtual ~Optimizer() = default;
 
@@ -18,27 +20,30 @@ class Optimizer {
   virtual void update(const std::vector<Matrix*>& params,
                       const std::vector<Matrix*>& grads) = 0;
   virtual std::string getName() const = 0;
+
+  // Deep copy support
+  virtual std::unique_ptr<Optimizer> clone() const = 0;
 };
 
 // --- Stochastic Gradient Descent (SGD) ---
 class SGD : public Optimizer {
  private:
-  float learning_rate;
 
  public:
-  explicit SGD(float learning_rate = 0.01f);
+  explicit SGD();
 
   void update(const std::vector<Matrix*>& params,
               const std::vector<Matrix*>& grads) override;
   std::string getName() const override { return "Stochastic Gradient Descent"; }
 
-  void setLearningRate(float lr) { learning_rate = lr; }
+  std::unique_ptr<Optimizer> clone() const override {
+    return std::make_unique<SGD>();
+  }
 };
 
 // --- Adam ----
 class Adam : public Optimizer {
  private:
-  float learning_rate;
   float beta1;
   float beta2;
   float epsilon;
@@ -51,12 +56,15 @@ class Adam : public Optimizer {
   std::vector<Matrix> v_cache;
 
  public:
-  explicit Adam(float learning_rate = 0.001f, float beta1 = 0.9f,
-                float beta2 = 0.999f, float epsilon = 1e-8f);
+  explicit Adam(float beta1 = 0.9f, float beta2 = 0.999f,
+                float epsilon = 1e-8f);
 
   void update(const std::vector<Matrix*>& params,
               const std::vector<Matrix*>& grads) override;
   std::string getName() const override { return "Adam"; }
+  std::unique_ptr<Optimizer> clone() const override {
+    return std::make_unique<Adam>();
+  }
 };
 
 }  // namespace core

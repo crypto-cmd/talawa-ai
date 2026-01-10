@@ -748,7 +748,7 @@ Matrix Matrix::addVector(const Matrix& vector) const {
   return result;
 }
 
-void Matrix::sumRows(Matrix& out) const {
+void Matrix::reduceToRow(Matrix& out) const {
   float* R = out.data.data();
   const float* A = this->data.data();
   int n = rows;
@@ -768,6 +768,37 @@ void Matrix::sumRows(Matrix& out) const {
     for (; j < m; ++j) {
       R[j] += row_ptr[j];
     }
+  }
+}
+// RENAMED: sumHorizontal (or sumOfRowElements)
+// Collapses [Rows x Cols] -> [Rows x 1]
+void Matrix::reduceToCol(Matrix& out) const {
+  float* R = out.data.data();
+  const float* A = this->data.data();
+  int n = rows;
+  int m = cols;
+
+  for (int i = 0; i < n; ++i) {
+    const float* row_ptr = &A[i * m];
+
+    __m256 sum_vec = _mm256_setzero_ps();
+    int j = 0;
+
+    for (; j <= m - 8; j += 8) {
+      __m256 val_vec = _mm256_loadu_ps(&row_ptr[j]);
+      sum_vec = _mm256_add_ps(sum_vec, val_vec);
+    }
+
+    float temp[8];
+    _mm256_storeu_ps(temp, sum_vec);
+    float row_total = 0.0f;
+    for (int k = 0; k < 8; ++k) row_total += temp[k];
+
+    for (; j < m; ++j) {
+      row_total += row_ptr[j];
+    }
+
+    R[i] = row_total;
   }
 }
 

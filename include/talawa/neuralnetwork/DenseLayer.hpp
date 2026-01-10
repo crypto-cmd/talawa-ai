@@ -1,6 +1,9 @@
 #pragma once
 #include <stdexcept>
 #include <vector>
+#include <string>
+#include <sstream>
+#include <memory>
 
 #include "talawa/core/Activation.hpp"
 #include "talawa/neuralnetwork/Layer.hpp"
@@ -60,6 +63,7 @@ class DenseLayer : public ILayer {
   void load(std::istream& in) override;
 
   Shape getOutputShape() const override;
+  std::unique_ptr<ILayer> clone() const override;
 };
 };  // namespace nn
 };  // namespace talawa

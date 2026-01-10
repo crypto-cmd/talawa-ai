@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 #include <string>
 
 #include "talawa/core/Matrix.hpp"
@@ -27,6 +28,9 @@ class Loss {
 
   virtual std::string getName() const = 0;
   virtual LossInputType getInputType() const = 0;
+
+  // Deep copy support
+  virtual std::unique_ptr<Loss> clone() const = 0;
 };
 
 // include/talawa/neuralnetwork/Loss.hpp
@@ -39,6 +43,9 @@ class HuberLoss : public Loss {
   LossInputType getInputType() const override {
     return LossInputType::RAW_VALUES;
   }
+  std::unique_ptr<Loss> clone() const override {
+    return std::make_unique<HuberLoss>(*this);
+  }
 };
 // --- Mean Squared Error (MSE) ---
 // Best for: Regression (predicting house prices, coordinates, etc.)
@@ -50,6 +57,9 @@ class MeanSquaredError : public Loss {
   LossInputType getInputType() const override {
     return LossInputType::RAW_VALUES;
   }
+  std::unique_ptr<Loss> clone() const override {
+    return std::make_unique<MeanSquaredError>(*this);
+  }
 };
 
 class CrossEntropyLoss : public Loss {
@@ -58,6 +68,9 @@ class CrossEntropyLoss : public Loss {
   Matrix gradient(const Matrix& prediction, const Matrix& target) override;
   std::string getName() const override { return "Cross Entropy Loss"; }
   LossInputType getInputType() const override { return LossInputType::LOGITS; }
+  std::unique_ptr<Loss> clone() const override {
+    return std::make_unique<CrossEntropyLoss>(*this);
+  }
 };
 
 class CategoricalCrossEntropyLoss : public Loss {

@@ -19,8 +19,8 @@ class Conv2DLayer : public ILayer {
  private:
   // Dimensions
   int depth, input_height, input_width;
-  int filters, kernel_size, stride, padding;
-  int output_height, output_width;
+  size_t filters, kernel_size, stride, padding;
+  size_t output_height, output_width;
 
   // Parameters
   core::Matrix kernels;  // Shape: (kernel_size * kernel_size * depth, filters)
@@ -77,6 +77,9 @@ class Conv2DLayer : public ILayer {
 
   void save(std::ostream&) const override;
   void load(std::istream&) override;
+  std::unique_ptr<ILayer> clone() const override {
+    return std::make_unique<Conv2DLayer>(*this);
+  }
 };
 
 }  // namespace nn

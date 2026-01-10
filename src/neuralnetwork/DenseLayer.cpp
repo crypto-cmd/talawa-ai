@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <memory>
 
 namespace talawa {
 namespace nn {
@@ -127,7 +128,7 @@ Matrix DenseLayer::backward(const Matrix& outputGradients) {
 
   // dB = sum(dZ, axis=0)
   biases_grad.fill(0.0f);
-  this->dZ.sumRows(biases_grad);
+  this->dZ.reduceToRow(biases_grad);
 
   // dX = dZ * W^T
   weights.transpose(this->weights_T_cache);
@@ -158,6 +159,9 @@ std::string DenseLayer::info() const {
   ss << "Dense Layer [" << in << " -> " << out
      << "] Activation: " << activation.getName();
   return ss.str();
+}
+std::unique_ptr<ILayer> DenseLayer::clone() const {
+  return std::make_unique<DenseLayer>(*this);
 }
 
 }  // namespace nn

@@ -66,6 +66,7 @@ class QTable : public IAgent {
 
   virtual void update(const env::Transition& transition) override;
 
+  std::map<HashKey, QValues>  getQTable() const { return q_table_; }
   void print() const override {
     for (const auto& [state_hash, q_values] : q_table_) {
       std::cout << "State [" << state_hash << "]: Q-values = [";
@@ -95,9 +96,10 @@ class QTable : public IAgent {
     auto size = obs.cols * obs.rows;
     key.reserve(size);
 
+    // Assume one hot encoding for discrete states
     const float* data = obs.rawData();
     for (int i = 0; i < size; ++i) {
-      key += std::to_string(data[i]);
+      key += std::to_string(static_cast<int>(data[i]));
       if (i < size - 1) key += "_";
     }
     return key;

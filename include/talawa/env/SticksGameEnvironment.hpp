@@ -53,9 +53,9 @@ class StickGameEnv : public IEnvironment, public Snapshotable<uint8_t> {
     agents_data_.at(get_active_agent()).report.previous_state =
         observe(get_active_agent());
     agents_data_.at(get_active_agent()).report.action = action;
+
     // Validate action
-    int sticks_taken =
-        static_cast<int>(action(0, 0)) + 1;  // Action 0,1,2 -> take 1,2,3
+    int sticks_taken = action.item<int>() + 1;  // Action 0,1,2 -> take 1,2,3
     if (sticks_taken < 1 || sticks_taken > 3) {
       throw std::runtime_error(
           "Invalid action: can only take 1, 2, or 3 sticks.");
@@ -65,6 +65,7 @@ class StickGameEnv : public IEnvironment, public Snapshotable<uint8_t> {
           "Invalid action: cannot take more sticks than are remaining.");
     }
 
+    // Apply action
     _num_sticks_remaining -= sticks_taken;
 
     // Update report after action
@@ -134,15 +135,13 @@ class StickGameEnv : public IEnvironment, public Snapshotable<uint8_t> {
         {0.0f},  // Low: 0 sticks
         {21.0f}  // High: 21 sticks
     );
+    return shared_obs_space;
   }
   std::unique_ptr<IEnvironment> clone() const override {
     return std::make_unique<StickGameEnv>(*this);
   }
 
   bool is_done() const override { return _num_sticks_remaining <= 0; }
-  StepReport last(const AgentID& agent_id) const override {
-    return agents_data_.at(agent_id).report;
-  }
 
   bool is_agent_available(const AgentID& agent_id) const override {
     return _num_sticks_remaining > 0;

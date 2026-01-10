@@ -8,7 +8,7 @@
 namespace talawa {
 namespace core {
 
-SGD::SGD(float learning_rate) : learning_rate(learning_rate) {}
+SGD::SGD() {}
 
 void SGD::update(const std::vector<Matrix*>& params,
                  const std::vector<Matrix*>& grads) {
@@ -21,7 +21,7 @@ void SGD::update(const std::vector<Matrix*>& params,
                              std::to_string(grads.size()) + ").");
   }
 
-  float lr = this->learning_rate;
+  float lr = this->get_learning_rate();
   __m256 lr_vec = _mm256_set1_ps(lr);
 
   // Iterate over all layers' parameters (weights and biases)
@@ -54,8 +54,8 @@ void SGD::update(const std::vector<Matrix*>& params,
   }
 }
 
-Adam::Adam(float lr, float beta1, float beta2, float eps)
-    : learning_rate(lr), beta1(beta1), beta2(beta2), epsilon(eps), t(0) {}
+Adam::Adam(float beta1, float beta2, float eps)
+    : beta1(beta1), beta2(beta2), epsilon(eps), t(0) {}
 
 void Adam::update(const std::vector<Matrix*>& params,
                   const std::vector<Matrix*>& grads) {
@@ -89,7 +89,7 @@ void Adam::update(const std::vector<Matrix*>& params,
   __m256 one_minus_beta2_vec = _mm256_set1_ps(1.0f - beta2);
   __m256 correction_m_vec = _mm256_set1_ps(correction_m);
   __m256 correction_v_vec = _mm256_set1_ps(correction_v);
-  __m256 lr_vec = _mm256_set1_ps(learning_rate);
+  __m256 lr_vec = _mm256_set1_ps(this->get_learning_rate());
   __m256 eps_vec = _mm256_set1_ps(epsilon);
 
   // 4. Update Parameters
@@ -153,7 +153,7 @@ void Adam::update(const std::vector<Matrix*>& params,
       float v_hat = V[j] * correction_v;
 
       // Update Parameter
-      P[j] -= learning_rate * m_hat / (std::sqrt(v_hat) + epsilon);
+      P[j] -= this->get_learning_rate() * m_hat / (std::sqrt(v_hat) + epsilon);
     }
   }
 }

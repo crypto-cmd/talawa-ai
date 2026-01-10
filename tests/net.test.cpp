@@ -53,7 +53,7 @@ int main() {
 
   // 4. Training Loop
   // ==========================================
-  int epochs = 50;
+  int epochs = 10;
 
   std::cout << "Starting Training..." << std::endl;
 
@@ -76,9 +76,7 @@ int main() {
             << std::endl;
 
   // Print probabilities for the first image in the batch
-  for (int i = 0; i < 10; ++i) {
-    std::cout << "Class " << i << ": " << predictions(0, i) << std::endl;
-  }
+  predictions.print();
 
   return 0;
 }

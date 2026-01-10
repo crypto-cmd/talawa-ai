@@ -11,6 +11,7 @@
 #include "talawa/env/interfaces/IEnvironment.hpp"
 #include "talawa/rl/IAgent.hpp"
 #include "talawa/rl/QTable.hpp"
+#include "talawa/visuals/IRenderer.hpp"
 using namespace talawa;
 
 namespace talawa::arena {
@@ -86,10 +87,17 @@ class Arena {
     }
   };
 
+  struct TournamentConfig {
+    int rounds = 100;      // Number of episodes to play
+    int max_steps = 1000;  // Max steps per episode to avoid infinite loops
+  };
   // Runs an episode in that environment with the registered agents
-  void match(bool training = true) {
+  void match(int max_steps, bool training = true,
+             visualizer::IRenderer* renderer = nullptr) {
     environment_.reset();
     retired_agents_.clear();
+
+    int ticks = 0;
     while (retired_agents_.size() < environment_.get_agent_order().size()) {
       for (const auto& agent_id : environment_.get_agent_order()) {
         rl::agent::IAgent& agent = environment_.get_agent(agent_id);
@@ -106,44 +114,51 @@ class Arena {
         }
 
         auto report = environment_.last(agent_id);
-        // std::cout << "Agent " << environment_.get_agent_name(agent_id)
-        //           << " took action "
-        //           << static_cast<int>(report.action(0, 0)) + 1 << " in state
-        //           "
-        //           << report.previous_state(0, 0)
-        //           << ", reward: " << report.reward
-        //           << ", sticks left: " << report.resulting_state(0, 0)
-        //           << std::endl;
 
-        //   Learn
-        agent.update({
-            .state = report.previous_state,
-            .action = report.action,
-            .reward = report.reward,
-            .next_state = report.resulting_state,
-            .status = report.episode_status,
-        });
+        //   Learn (only during training)
+        if (training) {
+          agent.update({
+              .state = report.previous_state,
+              .action = report.action,
+              .reward = report.reward,
+              .next_state = report.resulting_state,
+              .status = report.episode_status,
+          });
+        }
         if (report.episode_status != env::EpisodeStatus::Running) {
           retired_agents_.insert(agent_id);
         }
+      }
+
+      if (renderer != nullptr) {
+        if (!renderer->rendering_initialized()) {
+          renderer->initRendering();
+        }
+        renderer->update();
+        renderer->render();
+      }
+      ticks++;
+      if (ticks >= max_steps) {
+        break;  // Prevent infinite loops
       }
     }
   };
   /**
    * @brief Runs a competitive tournament to evaluate agent performance.
    * @param rounds Number of episodes to play.
-   * @return TournamentStats containing wins, losses, and reward distributions.
+   * @return TournamentStats containing wins, losses, and reward
+   * distributions.
    * * NOTE: Training is strictly DISABLED during the tournament.
    */
-  TournamentStats tournament(int rounds) {
+  TournamentStats tournament(TournamentConfig config) {
     TournamentStats stats;
     stats.arena = std::make_shared<Arena>(*this);
-    stats.episodes_played = rounds;
+    stats.episodes_played = config.rounds;
 
-    for (int i = 0; i < rounds; ++i) {
+    for (int i = 0; i < config.rounds; ++i) {
       // 1. DELEGATE: Play one complete game (Atomic Unit)
       // We force training=false so we are measuring skill, not learning.
-      match(/*training=*/false);
+      match(config.max_steps, false);
 
       // 2. COLLECT: Gather scores from the finished environment
       std::map<env::AgentID, float> episode_scores;

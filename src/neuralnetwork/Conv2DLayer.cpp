@@ -346,7 +346,7 @@ Matrix Conv2DLayer::backward(const Matrix& outputGradients) {
   // Sum dZ across all batches and pixels
   biases_grad.fill(0.0f);
   auto t_bgrad = std::chrono::steady_clock::now();
-  dZ.sumRows(biases_grad);
+  dZ.reduceToRow(biases_grad);
   profiling_bias_grad +=
       std::chrono::duration_cast<std::chrono::duration<double>>(
           std::chrono::steady_clock::now() - t_bgrad)

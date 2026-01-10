@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -14,38 +15,37 @@
 #include "talawa/neuralnetwork/Layer.hpp"
 #include "talawa/neuralnetwork/Loss.hpp"
 #include "talawa/neuralnetwork/Pooling2DLayer.hpp"
+#include "talawa/rl/IAgent.hpp"
 namespace talawa::nn {
 
 using LayerConfigVariant =
     std::variant<DenseLayerConfig, Conv2DLayerConfig, Pooling2DLayerConfig>;
 class NeuralNetwork;  // Forward declaration
 class NeuralNetworkBuilder {
+ private:
+  std::vector<std::unique_ptr<ILayer>> prebuilt_layers;
+  int num_prebuilt_standard_layers_ = 0;
+  void prebuild();
+
  public:
   static NeuralNetworkBuilder create(const Shape& shape);
   NeuralNetworkBuilder& add(LayerConfigVariant config);
   NeuralNetworkBuilder& setOptimizer(std::unique_ptr<core::Optimizer> opt);
   NeuralNetworkBuilder& setLossFunction(std::unique_ptr<loss::Loss> loss);
-  std::unique_ptr<NeuralNetwork> build();
-
-  NeuralNetworkBuilder(const NeuralNetworkBuilder& other) {
-    // deep copy
-    this->input_shape = other.input_shape;
-    this->configs = other.configs;
-    // Note: Optimizer and Loss are not copied to avoid shared ownership
-    this->optimizer = nullptr;
-    this->loss_fn = nullptr;
-  }
+  NeuralNetworkBuilder& inject(
+      std::function<std::pair<std::unique_ptr<ILayer>, Shape>(const Shape&)>
+          layer_creator);
+  std::unique_ptr<NeuralNetwork> build(float learning_rate = 0.1f);
 
  private:
   Shape input_shape;
   std::vector<LayerConfigVariant> configs;
-  std::unique_ptr<core::Optimizer> optimizer =
-      std::make_unique<core::SGD>(0.01f);
+  std::unique_ptr<core::Optimizer> optimizer = std::make_unique<core::SGD>();
   std::unique_ptr<loss::Loss> loss_fn =
       std::make_unique<loss::MeanSquaredError>();
   NeuralNetworkBuilder() = default;  // Private constructor
 };
-class NeuralNetwork {
+class NeuralNetwork : public rl::agent::ILearnable {
   friend class NeuralNetworkBuilder;
 
  private:
@@ -53,72 +53,23 @@ class NeuralNetwork {
 
  public:
   NeuralNetwork(const NeuralNetwork& other) {
-    // --- DEBUG CHECK ---
-    // Ensure the source network has a valid input shape (builder should set it)
-    if (other.input_shape.depth == 0 && other.input_shape.height == 0) {
-      std::cerr << "\n[FATAL ERROR] NeuralNetwork::copy() called but "
-                   "source network input_shape is ZERO."
-                << std::endl;
-      std::cerr << "This means 'network->input_shape = this->input_shape;' is "
-                   "MISSING from Builder::build()."
-                << std::endl;
-      std::exit(1);  // Force exit so you see the message
+    // Deep copy layers
+    layers.clear();
+    for (const auto& layer : other.layers) {
+      layers.push_back(layer->clone());
     }
-    // -------------------
+    // Deep copy optimizer and loss function
+    optimizer = other.optimizer->clone();
+    loss_fn = other.loss_fn->clone();
 
-    // 1. Create a fresh builder with the same input shape
-    auto builder = NeuralNetworkBuilder::create(other.get_input_shape());
-
-    // 2. Add all the same layer configurations
-    for (const auto& config : other.configs) {
-      builder.add(config);
-    }
-
-    builder.setLossFunction(std::make_unique<loss::MeanSquaredError>());
-    builder.setOptimizer(std::make_unique<core::SGD>(0.01f));
-
-    // 3. Build the new network (Randomly initialized weights)
-    // Note: Target networks don't need optimizers, so default SGD is fine.
-    auto copy = builder.build();
-
-    // 4. Copy the Weights (The most important part)
-    // Iterate over the source network's layers ("other") and copy their
-    // parameter matrices into the freshly-built target ("copy").
-    for (size_t i = 0; i < other.layers.size(); ++i) {
-      auto src_params = other.layers[i]->getParameters();
-      auto dst_params = copy->layers[i]->getParameters();
-
-      if (src_params.size() != dst_params.size()) {
-        throw std::runtime_error(
-            "Clone failed: Layer parameter count mismatch.");
-      }
-
-      for (size_t j = 0; j < src_params.size(); ++j) {
-        *dst_params[j] = *src_params[j];
-      }
-    }
-
-    // Check if every layer has the same weights (Debugging)
-    for (size_t i = 0; i < other.layers.size(); ++i) {
-      auto src_params = other.layers[i]->getParameters();
-      auto dst_params = copy->layers[i]->getParameters();
-
-      for (size_t j = 0; j < src_params.size(); ++j) {
-        if (!(*dst_params[j] == *src_params[j])) {
-          throw std::runtime_error(
-              "Clone verification failed: Weights do not match after copy.");
-        }
-      }
-    }
-
-    // Finally, assign the copied network to this
-    this->layers = std::move(copy->layers);
-    this->optimizer = std::move(copy->optimizer);
-    this->loss_fn = std::move(copy->loss_fn);
-    this->input_shape = copy->input_shape;
-    this->configs = copy->configs;
-    // Preserve computed parameter count from the newly-built copy
-    this->_totalParameters = copy->_totalParameters;
+    // Copy configs and input shape
+    configs = other.configs;
+    input_shape = other.input_shape;
+    m_optimized_act = other.m_optimized_act;
+    _totalParameters = other._totalParameters;
+  }
+  const std::vector<std::unique_ptr<ILayer>>& getLayers() const {
+    return layers;
   }
 
   // Copy-assignment operator using copy-and-swap idiom
@@ -148,6 +99,13 @@ class NeuralNetwork {
   std::unique_ptr<NeuralNetwork> clone() const;
 
   int getTotalParameters() const { return _totalParameters; }
+
+  void set_learning_rate(float lr) override {
+    rl::agent::ILearnable::set_learning_rate(lr);
+    if (optimizer) {
+      optimizer->set_learning_rate(lr);  // Propagate to optimizer
+    }
+  }
 
  private:
   Shape get_input_shape() const;

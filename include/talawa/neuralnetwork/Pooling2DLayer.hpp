@@ -45,6 +45,9 @@ class Pooling2DLayer : public ILayer {
 
   void save(std::ostream& out) const override;
   void load(std::istream& in) override;
+  std::unique_ptr<ILayer> clone() const override {
+    return std::make_unique<Pooling2DLayer>(*this);
+  }
 };
 
 }  // namespace nn

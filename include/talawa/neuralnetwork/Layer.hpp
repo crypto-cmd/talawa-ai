@@ -3,6 +3,8 @@
 #include "talawa/core/Initializer.hpp"
 #include "talawa/core/Matrix.hpp"
 
+#include <memory>
+
 #define THROW_LAYER_ERROR(msg) THROW_talawa_ERROR("Layer", msg)
 namespace talawa {
 namespace nn {
@@ -38,6 +40,9 @@ class ILayer {
   virtual void load(std::istream& in) = 0;
 
   virtual Shape getOutputShape() const = 0;
+
+  // Deep copy support
+  virtual std::unique_ptr<ILayer> clone() const = 0;
 };
 }  // namespace nn
 }  // namespace talawa

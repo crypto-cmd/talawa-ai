@@ -48,7 +48,9 @@ class IEnvironment {
   // --- State & Observation Methods ---
   virtual Observation observe(const AgentID&) const = 0;
   virtual void step(const Action& action) = 0;
-  virtual StepReport last(const AgentID&) const = 0;
+  virtual StepReport last(const AgentID& agent_id) const {
+    return agents_data_.at(agent_id).report;
+  }
 
   // ---- Metadata about the environment ----
   virtual Space get_action_space(const AgentID&) const = 0;
@@ -59,7 +61,7 @@ class IEnvironment {
   virtual std::optional<ActionMask> get_legal_mask(const AgentID&) {
     return std::nullopt;
   }
-  float get_total_reward(AgentID id) const {
+  float get_total_reward(const AgentID& id) const {
     auto it = cumulative_rewards_.find(id);
     if (it != cumulative_rewards_.end()) {
       return it->second;
@@ -77,7 +79,7 @@ class IEnvironment {
         .report = StepReport{},
     };
 
-    agents_instances_.emplace(agent_id, agent);
+    agents_instances_.insert_or_assign(agent_id, agent);
   }
   std::vector<AgentID> get_agent_order() const { return agent_order_; }
   rl::agent::IAgent& get_agent(const AgentID& agent_id) {
@@ -88,7 +90,7 @@ class IEnvironment {
   }
   // Determines if agent is allowed to act in general (not just in current step)
   virtual bool is_agent_available(const AgentID& agent_id) const {
-    return agents_instances_.find(agent_id) != agents_instances_.end();
+    return !is_done();
   }
 };
 };  // namespace talawa::env

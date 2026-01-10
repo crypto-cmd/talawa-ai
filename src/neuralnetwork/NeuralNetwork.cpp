@@ -19,6 +19,7 @@ class LayerFactory {
         input_shape.depth, input_shape.height, input_shape.width, cfg.filters,
         cfg.kernel_size, cfg.stride, cfg.padding, cfg.init, cfg.act);
     Shape next = layer->getOutputShape();
+    std::cout << "Created Conv2DLayer: " << layer->info() << "\n";
     return {std::move(layer), next};
   }
 
@@ -59,27 +60,56 @@ NeuralNetworkBuilder& NeuralNetworkBuilder::setLossFunction(
   loss_fn = std::move(loss);
   return *this;
 }
-std::unique_ptr<NeuralNetwork> NeuralNetworkBuilder::build() {
+std::unique_ptr<NeuralNetwork> NeuralNetworkBuilder::build(
+    float learning_rate) {
+  prebuild();
   std::unique_ptr<NeuralNetwork> network(new NeuralNetwork());
 
+  if (optimizer == nullptr) {
+    throw std::runtime_error("Optimizer not set in NeuralNetworkBuilder.");
+  }
+  if (loss_fn == nullptr) {
+    throw std::runtime_error("Loss function not set in NeuralNetworkBuilder.");
+  }
   network->configs = std::move(configs);
   network->optimizer = std::move(optimizer);
   network->loss_fn = std::move(loss_fn);
   network->input_shape = this->input_shape;
-  Shape current_shape = this->input_shape;
-  for (const auto& config_variant : network->configs) {
+  for (auto& layer : prebuilt_layers) {
+    network->layers.push_back(std::move(layer));
+  }
+  prebuilt_layers.clear();
+
+  // Recompute total parameters after all layers are created
+  network->recalcTotalParameters();
+
+  network->set_learning_rate(learning_rate);  // Propagate learning rate
+  return network;
+}
+
+void NeuralNetworkBuilder::prebuild() {
+  Shape current_shape = num_prebuilt_standard_layers_ == 0
+                            ? input_shape
+                            : prebuilt_layers.back()->getOutputShape();
+  for (size_t i = num_prebuilt_standard_layers_; i < configs.size(); ++i) {
+    const auto& config_variant = configs[i];
     std::visit(
         [&](auto&& config) {
           auto result = LayerFactory::create(config, current_shape);
-          network->layers.push_back(std::move(result.first));
+          prebuilt_layers.push_back(std::move(result.first));
           current_shape = result.second;
         },
         config_variant);
   }
-
-  // Recompute total parameters after all layers are created
-  network->recalcTotalParameters();
-  return network;
+  num_prebuilt_standard_layers_ = configs.size();
+}
+NeuralNetworkBuilder& NeuralNetworkBuilder::inject(
+    std::function<std::pair<std::unique_ptr<ILayer>, Shape>(const Shape&)>
+        layer_creator) {
+  prebuild();
+  const auto& prebuilt_shape = prebuilt_layers.back()->getOutputShape();
+  prebuilt_layers.push_back(layer_creator(prebuilt_shape).first);
+  return *this;
 }
 
 core::Matrix NeuralNetwork::predict(const core::Matrix& input) const {

@@ -9,8 +9,10 @@ if [ $# -ne 1 ]; then
     exit 1
 fi
 
+
 EXAMPLE_SRC="$1"
 EXAMPLE_NAME=$(basename "$EXAMPLE_SRC")
+EXAMPLE_TARGET="$EXAMPLE_NAME"
 EXAMPLE_BIN="build/$EXAMPLE_NAME"
 
 # Check if build directory exists
@@ -19,13 +21,15 @@ if [ ! -d build ]; then
     mkdir -p build
 fi
 
+
 cd build
 cmake ..
 cd ..
 
-# Build the example (full build, as CMakeLists.txt builds all examples)
-echo "[INFO] Building project..."
-cmake --build build -- -j
+
+# Build only the requested example target
+echo "[INFO] Building target $EXAMPLE_TARGET..."
+cmake --build build --target "$EXAMPLE_TARGET" -- -j
 
 # Check if the binary exists
 if [ ! -x "$EXAMPLE_BIN" ]; then

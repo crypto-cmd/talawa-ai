@@ -3,6 +3,7 @@
 #include <initializer_list>
 #include <stdexcept>
 #include <vector>
+#include <iostream>
 
 #include "talawa/core/Error.hpp"
 
@@ -18,7 +19,7 @@ class Matrix {
   Matrix(const Matrix&) = default;
   Matrix(Matrix&&) = default;
   Matrix(float scalar) : Matrix({{scalar}}) {};
-  void print(int decimals = 2) const;
+  void print(int decimals = 4) const;
 
   // Operation overloads
   Matrix operator+(const Matrix& other) const;
@@ -33,6 +34,17 @@ class Matrix {
   // Element access
   float operator()(int row, int col) const;
   float& operator()(int row, int col);
+
+  // sets a full row
+  void setRow(int row, const std::vector<float>& values) {
+    if (static_cast<size_t>(cols) != values.size()) {
+      std::cout << "setRow: Mismatched number of columns.";
+      return;
+    }
+    for (int j = 0; j < cols; ++j) {
+      (*this)(row, j) = values[j];
+    }
+  }
 
   // Dot and hadamard products
   Matrix dot(const Matrix& other) const;
@@ -55,7 +67,8 @@ class Matrix {
   void dotWithBTransposed(const Matrix& B_T, Matrix& out) const;
   Matrix hadamard(const Matrix& other) const;
   Matrix addVector(const Matrix& vector) const;
-  void sumRows(Matrix& out) const;
+  void reduceToRow(Matrix& out) const;
+  void reduceToCol(Matrix& out) const;
   // Returns a new Matrix containing rows from start_row (inclusive) to end_row
   // (exclusive)
   Matrix slice(int start_row, int end_row) const;
@@ -74,6 +87,8 @@ class Matrix {
 
   size_t rows;
   size_t cols;
+
+  size_t size() const { return rows * cols; }
 
   static const Matrix Empty;
 
@@ -99,7 +114,8 @@ class Matrix {
 
   Matrix map(std::function<float(int row, int col, float)> func) const {
     Matrix result(rows, cols);
-    result.apply([&](int i, int j, float val) { return func(i, j, val); });
+    result.apply(
+        [&](int i, int j, float) { return func(i, j, (*this)(i, j)); });
     return result;
   }
 
@@ -119,6 +135,7 @@ class Matrix {
   float* rawData() { return data.data(); }
   const float* rawData() const { return data.data(); }
 
+  std::vector<float> flatten() const { return std::vector<float>(data); }
 
  private:
   std::vector<float> data;
