@@ -16,9 +16,9 @@ int main() {
   rl::agent::DQNConfig config{.num_actions = static_cast<int>(as.n())};
   config.sample_batch_size = 32;
   config.memory_warmup_size = 100;
-  config.memory_size = 5000;
-  config.target_update_interval = 1000;  // Update target very infrequently
-  config.learning_rate = 0.001f;
+  config.memory_size = 50000;
+  config.target_update_interval = 1;
+  config.target_update_type = rl::agent::TargetNetworkUpdateType::SOFT;
   config.epsilon = 0.5f;
   config.use_double_dqn = true;
 
@@ -26,16 +26,11 @@ int main() {
       nn::NeuralNetworkBuilder::create({1, 1, (size_t)obs_space.n()});
   builder
       .add(nn::DenseLayerConfig{
-          .neurons = 64,
-          .act = talawa::core::Activation::RELU,
+          .neurons = 8,
+          .act = talawa::core::Activation::TANH,
           .init = talawa::core::Initializer::HE_NORMAL,
       })
-      .add(nn::DenseLayerConfig{
-          .neurons = 64,
-          .act = talawa::core::Activation::RELU,
-          .init = talawa::core::Initializer::HE_NORMAL,
-      })
-      .setLossFunction(std::make_unique<nn::loss::MeanSquaredError>())
+      .setLossFunction(std::make_unique<nn::loss::HuberLoss>())
       .setOptimizer(std::make_unique<core::Adam>(0.001f));
   rl::agent::DQNAgent ai(builder, config);
 
@@ -63,8 +58,14 @@ int main() {
       float saved_eps = ai.get_epsilon();
       ai.set_epsilon(0.01f);
 
-      std::cout << "\nIntermediate Tournament Results after " << episode + 1
-                << " episodes:\n";
+      // Debug: test Q-values
+      core::Matrix test_obs(1, 1);
+      test_obs(0, 0) = 0.5f;  // Middle position
+      auto action = ai.act(env::Observation(test_obs), std::nullopt, false);
+      std::cout << "\nDebug: pos=0.5 -> action=" << action(0, 0) << "\n";
+
+      std::cout << "Intermediate Tournament Results after " << episode + 1
+                << " episodes (eps=" << saved_eps << "):\n";
       auto results = arena.tournament(tournamentConfig);
       results.print();
 

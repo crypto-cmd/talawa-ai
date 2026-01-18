@@ -1,11 +1,8 @@
 #include "talawa/env/TicTacToe.hpp"
 
 namespace talawa::env {
-TicTacToe::TicTacToe() : board_(3, 3), active_agent_index_(0), done_(false) {
-  agent_order_ = {0, 1};  // Two players: 0 and 1
-  cumulative_rewards_[0] = 0.0f;
-  cumulative_rewards_[1] = 0.0f;
-  board_.fill(0.0f);
+TicTacToe::TicTacToe() : IEnvironment({0, 1}), board_(3, 3), active_agent_index_(0) {
+  reset();
 }
 void TicTacToe::reset(size_t random_seed) {
   board_.fill(0.0f);
@@ -17,9 +14,6 @@ void TicTacToe::reset(size_t random_seed) {
   for (auto& [id, data] : agents_data_) {
     data.report = StepReport{};
   }
-}
-AgentID TicTacToe::get_active_agent() const {
-  return agent_order_[active_agent_index_];
 }
 Observation TicTacToe::observe(const AgentID&) const {
   // Flatten the 3x3 board into a 1x9 observation

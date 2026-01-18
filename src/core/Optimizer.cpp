@@ -39,17 +39,12 @@ void SGD::update(const std::vector<Matrix*>& params,
       __m256 p_vec = _mm256_loadu_ps(&P[j]);
       __m256 g_vec = _mm256_loadu_ps(&G[j]);
 
-      // Clamp gradients to [-1, 1] for stability
-      __m256 thresh_vec = _mm256_set1_ps(1);
-      __m256 neg_thresh_vec = _mm256_set1_ps(-1);
-      g_vec = _mm256_min_ps(thresh_vec, _mm256_max_ps(neg_thresh_vec, g_vec));
-
       __m256 update = _mm256_fnmadd_ps(lr_vec, g_vec, p_vec);  // p - lr*g
       _mm256_storeu_ps(&P[j], update);
     }
     // Scalar cleanup
     for (int j = main_loop_limit; j < size; ++j) {
-      P[j] -= lr * std::clamp(G[j], -1.0f, 1.0f);
+      P[j] -= lr * G[j];
     }
   }
 }
@@ -109,10 +104,6 @@ void Adam::update(const std::vector<Matrix*>& params,
       __m256 v_vec = _mm256_loadu_ps(&V[j]);
       __m256 p_vec = _mm256_loadu_ps(&P[j]);
 
-      __m256 thresh_vec = _mm256_set1_ps(1);
-      __m256 neg_thresh_vec = _mm256_set1_ps(-1);
-      g_vec = _mm256_min_ps(thresh_vec, _mm256_max_ps(neg_thresh_vec, g_vec));
-
       // m = beta1 * m + (1 - beta1) * g
       m_vec = _mm256_fmadd_ps(beta1_vec, m_vec,
                               _mm256_mul_ps(one_minus_beta1_vec, g_vec));
@@ -140,7 +131,7 @@ void Adam::update(const std::vector<Matrix*>& params,
 
     // Scalar cleanup for remaining elements
     for (int j = main_loop_limit; j < size; ++j) {
-      float g = std::clamp(G[j], -1.0f, 1.0f);
+      auto g = G[j];
 
       // Update biased first moment (Momentum)
       M[j] = beta1 * M[j] + (1.0f - beta1) * g;

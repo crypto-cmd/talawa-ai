@@ -59,6 +59,7 @@ struct DQNConfig {
   int target_update_interval = 8000;
   float learning_rate = 0.001f;
   float epsilon = 1.0f;
+  int train_frequency = 1;
   UpdateRule update_rule = UpdateRule::Standard;
   TargetNetworkUpdateType target_update_type = TargetNetworkUpdateType::HARD;
   float tau = 0.005f;  // For soft updates
@@ -84,7 +85,16 @@ class DQNAgent : public IAgent, public ILearnable, public IExplorable {
       bool training = false) override;
   virtual void update(const env::Transition& transition) override;
   virtual void print() const override;
+  NeuralNetwork& getQNetwork() { return *q_network; }
 
+  void set_learning_rate(float lr) override {
+    // 1. Update local storage
+    rl::agent::ILearnable::set_learning_rate(lr);
+    // 2. Update the actual network optimizer
+    if (q_network) {
+      q_network->set_learning_rate(lr);
+    }
+  }
   // Additional functions
   void updateTargetNetwork();
 
@@ -96,7 +106,5 @@ class DQNAgent : public IAgent, public ILearnable, public IExplorable {
     core::Matrix rewards;
     core::Matrix dones;
   };
-  TrainableBatch transformForTraining(
-      const std::vector<env::Transition>& transitions);
 };
 }  // namespace talawa::rl::agent

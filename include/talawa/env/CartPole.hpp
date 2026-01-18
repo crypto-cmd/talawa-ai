@@ -16,6 +16,7 @@ class CartPole : public IEnvironment, public visualizer::IRenderer {
   const float force_mag = 10.0f;
   const float tau = 0.02f;  // seconds between state updates
 
+  int steps_ = 0;
   // --- Thresholds for Game Over ---
   const float theta_threshold_radians = 15 * 2 * M_PI / 360;  // ~15 degrees
   const float x_threshold = 2.4f;
@@ -23,15 +24,12 @@ class CartPole : public IEnvironment, public visualizer::IRenderer {
   // --- Current State ---
   // [x, x_dot, theta, theta_dot]
   float state[4];
-  bool done_;
 
  public:
   CartPole();
   ~CartPole() = default;
 
-  bool is_done() const override { return done_; }
   void reset(size_t random_seed = 42) override;
-  AgentID get_active_agent() const override;
 
   Observation observe(const AgentID&) const override;
   void step(const Action& action) override;

@@ -23,19 +23,20 @@ class Initializer {
 
   // The main worker function
   // Modifies the passed matrix in-place
-  void apply(Matrix& weights) const;
+  void apply(Matrix& weights);
 
  private:
   Type type;
   unsigned int seed;  // For reproducibility
+  std::mt19937 gen;
 
   // Internal logic helpers
-  void fillZeros(Matrix& m) const;
-  void fillOnes(Matrix& m) const;
-  void fillRandomUniform(Matrix& m) const;
-  void fillRandomNormal(Matrix& m) const;
-  void fillGlorotUniform(Matrix& m) const;
-  void fillHeNormal(Matrix& m) const;
+  void fillZeros(Matrix& m);
+  void fillOnes(Matrix& m);
+  void fillRandomUniform(Matrix& m);
+  void fillRandomNormal(Matrix& m);
+  void fillGlorotUniform(Matrix& m);
+  void fillHeNormal(Matrix& m);
 };
 
 }  // namespace core

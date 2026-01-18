@@ -13,6 +13,7 @@ class IRenderer {
  private:
   std::string window_title_;
   WindowSize window_size_;
+  bool initialized_ = false;
 
  public:
   IRenderer(WindowSize size = {800, 600},
@@ -21,17 +22,23 @@ class IRenderer {
     std::cout << "IRenderer created with title: " << window_title_ << "\n";
   }
   ~IRenderer() {
-    CloseWindow();
+    // Only close if Raylib thinks the window is ready
+    if (initialized_ && IsWindowReady()) {
+      CloseWindow();
+    }
     std::cout << "IRenderer destroyed for window: " << window_title_ << "\n";
   }
 
   void initRendering() {
+    if (initialized_) return;
+    initialized_ = true;
     InitWindow(window_size_.width, window_size_.height, window_title_.c_str());
     SetTargetFPS(60);
     std::cout << "Rendering initialized for window: " << window_title_ << "\n";
   }
 
   bool rendering_initialized() const { return IsWindowReady(); }
+
   bool is_active() const { return !WindowShouldClose(); }
   virtual void render() = 0;
   virtual void update() = 0;

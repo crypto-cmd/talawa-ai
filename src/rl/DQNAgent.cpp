@@ -120,7 +120,7 @@ DQNAgent::DQNAgent(talawa::nn::NeuralNetworkBuilder& builder,
     });
   }
   std::cout << "Building Q-Network...\n";
-  q_network = builder.build();
+  q_network = builder.build(config.learning_rate);
   std::cout << "Q-Network built.\n";
   if (config.use_double_dqn) {
     std::cout << "Using Double DQN.\n";
@@ -188,23 +188,25 @@ env::Action DQNAgent::act(const env::Observation& observation,
   return env::Action(actions);
 }
 void DQNAgent::update(const env::Transition& transition) {
-  auto true_target_network =
-      config.use_double_dqn ? target_network.get() : q_network.get();
   replay_buffer.add(transition);
+
+  if (steps_done % config.train_frequency != 0) {
+    return;  // Skip training this step
+  }
 
   if (replay_buffer.size() < static_cast<size_t>(config.memory_warmup_size)) {
     return;  // Not enough data to train
   }
+  auto true_target_network =
+      config.use_double_dqn ? target_network.get() : q_network.get();
   // Sample a batch of transitions
   auto batch = replay_buffer.sample(config.sample_batch_size);
-  auto trainable_batch = transformForTraining(batch);
 
-  auto q_current =
-      q_network->predict(trainable_batch.states);  // (N, num_actions)
+  auto q_current = q_network->predict(batch.states);  // (N, num_actions)
 
   // q_current.print();
   auto q_next_student =
-      q_network->predict(trainable_batch.next_states);  // (N, num_actions)
+      q_network->predict(batch.next_states);  // (N, num_actions)
   auto best_next_actions = core::Matrix(q_next_student.rows, 1);
   q_next_student.forEach([&](int i, int j, float val) {
     if (j == 0 ||
@@ -212,8 +214,8 @@ void DQNAgent::update(const env::Transition& transition) {
       best_next_actions(i, 0) = static_cast<float>(j);
     }
   });
-  auto q_next_target = true_target_network->predict(
-      trainable_batch.next_states);  // (N, num_actions)
+  auto q_next_target =
+      true_target_network->predict(batch.next_states);  // (N, num_actions)
   auto future_values = core::Matrix(q_next_target.rows, 1);
   q_next_target.forEach([&](int i, int j, float val) {
     if (static_cast<int>(j) == static_cast<int>(best_next_actions(i, 0))) {
@@ -221,10 +223,9 @@ void DQNAgent::update(const env::Transition& transition) {
     }
   });
   auto target_q_values = q_current.map([&](int i, int j, float val) {
-    auto reward = trainable_batch.rewards(i, 0);
-    auto done = trainable_batch.dones(i, 0);
-    if (static_cast<int>(j) ==
-        static_cast<int>(trainable_batch.actions(i, 0))) {
+    auto reward = batch.rewards(i, 0);
+    auto done = batch.dones(i, 0);
+    if (static_cast<int>(j) == static_cast<int>(batch.actions(i, 0))) {
       // If episode is done, there's no future value
       if (done > 0.5f) {
         return reward;
@@ -234,9 +235,9 @@ void DQNAgent::update(const env::Transition& transition) {
     return val;
   });
 
-  q_network->train(trainable_batch.states, target_q_values);
+  q_network->train(batch.states, target_q_values);
 
-  auto newq = q_network->predict(trainable_batch.states);
+  auto newq = q_network->predict(batch.states);
 
   steps_done++;
   updateTargetNetwork();
@@ -247,30 +248,32 @@ void DQNAgent::updateTargetNetwork() {
     // Hard update: copy weights directly
     target_network = std::make_unique<NeuralNetwork>(*q_network);
 
-  } else if (config.target_update_type == TargetNetworkUpdateType::SOFT) {
-    // Soft update: blend weights (Not Implemented)
-    return;
-  }
-}
-DQNAgent::TrainableBatch DQNAgent::transformForTraining(
-    const std::vector<env::Transition>& transitions) {
-  // Prepare batch matrices
-  size_t batch_size = transitions.size();
-  core::Matrix states(batch_size, transitions[0].state.size());
-  core::Matrix next_states(batch_size, transitions[0].next_state.size());
-  core::Matrix actions(batch_size, transitions[0].action.size());
-  core::Matrix rewards(batch_size, 1);
-  core::Matrix dones(batch_size, 1);
+  } else if (config.target_update_type == TargetNetworkUpdateType::SOFT &&
+             steps_done % config.target_update_interval == 0) {
+    // Formula: Target = (Tau * Source) + ((1 - Tau) * Target)
+    float tau = config.tau;  // e.g., 0.005
+    float one_minus_tau = 1.0f - tau;
 
-  for (size_t i = 0; i < batch_size; ++i) {
-    states.setRow(i, transitions[i].state.flatten());
-    next_states.setRow(i, transitions[i].next_state.flatten());
-    actions.setRow(i, transitions[i].action.flatten());
-    rewards(i, 0) = transitions[i].reward;
-    dones(i, 0) =
-        (transitions[i].status != env::EpisodeStatus::Running) ? 1.0f : 0.0f;
+    auto& source_layers = q_network->layers;
+    auto& target_layers = target_network->layers;
+
+    for (size_t i = 0; i < source_layers.size(); ++i) {
+      auto source_params = source_layers[i]->getParameters();
+      auto target_params = target_layers[i]->getParameters();
+
+      // Iterate through Weights and Biases
+      for (size_t j = 0; j < source_params.size(); ++j) {
+        Matrix* src = source_params[j];
+        Matrix* dst = target_params[j];
+
+        Matrix term1 = (*src) * tau;
+        Matrix term2 = (*dst) * one_minus_tau;
+
+        // Update the target weight in-place
+        *dst = term1 + term2;
+      }
+    }
   }
-  return {states, next_states, actions, rewards, dones};
 }
 void DQNAgent::print() const {
   auto double_dqn_str = config.use_double_dqn ? "Double" : "Single";

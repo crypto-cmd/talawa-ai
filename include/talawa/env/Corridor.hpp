@@ -12,7 +12,6 @@ class Corridor : public IEnvironment {
   ~Corridor();
 
   void reset(size_t random_seed = 42) override;
-  AgentID get_active_agent() const override;
 
   Observation observe(const AgentID&) const override;
   void step(const Action& action) override;
@@ -22,8 +21,6 @@ class Corridor : public IEnvironment {
   Space get_observation_space(const AgentID&) const override;
 
   std::unique_ptr<IEnvironment> clone() const override;
-
-  bool is_done() const override;
 };
 
 }  // namespace talawa::env

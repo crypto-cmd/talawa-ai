@@ -4,8 +4,7 @@
 #include <random>
 
 namespace talawa::env {
-CartPole::CartPole() : done_(false) {
-  agent_order_ = {0};  // Single agent with ID 0
+CartPole::CartPole() : IEnvironment({0}), IRenderer({800, 600}, "CartPole") {
   reset();
 }
 
@@ -18,6 +17,7 @@ void CartPole::reset(size_t) {
     state[i] = dist(gen);
   }
   done_ = false;
+  steps_ = 0;
 
   // Reset cumulative rewards
   cumulative_rewards_[0] = 0.0f;
@@ -25,9 +25,6 @@ void CartPole::reset(size_t) {
   for (auto& [id, data] : agents_data_) {
     data.report = StepReport{};
   }
-}
-AgentID CartPole::get_active_agent() const {
-  return agent_order_[0];  // Single agent environment
 }
 
 Observation CartPole::observe(const AgentID&) const {
@@ -45,6 +42,7 @@ Observation CartPole::observe(const AgentID&) const {
   return Observation(obs);
 }
 void CartPole::step(const Action& action) {
+  steps_++;
   if (done_) {
     throw std::runtime_error(
         "Episode has terminated. Please reset the environment.");
@@ -108,10 +106,6 @@ Space CartPole::get_observation_space(const AgentID&) const {
                            {2.4f, 5.0f, 0.418f, 5.0f});
 }
 
-StepReport CartPole::last(const AgentID& agentid) const {
-  return agents_data_.at(agentid).report;
-}
-
 std::unique_ptr<IEnvironment> CartPole::clone() const {
   return std::make_unique<CartPole>(*this);
 }
@@ -140,6 +134,8 @@ void CartPole::render() {
   DrawLine(static_cast<int>(pole_x), static_cast<int>(pole_y),
            static_cast<int>(pole_end_x), static_cast<int>(pole_end_y), RED);
 
+  DrawText("CartPole Environment", 10, 10, 20, DARKGRAY);
+  DrawText(("Steps: " + std::to_string(steps_)).c_str(), 10, 40, 20, DARKGRAY);
   EndDrawing();
 }
 

@@ -9,9 +9,7 @@ class FrozenLake : public IEnvironment, public Snapshotable<int> {
   FrozenLake();
   ~FrozenLake() override = default;
 
-  bool is_done() const override { return done_; }
   void reset(size_t random_seed = 42) override;
-  AgentID get_active_agent() const override;
 
   Observation observe(const AgentID&) const override;
   void step(const Action& action) override;
@@ -30,6 +28,5 @@ class FrozenLake : public IEnvironment, public Snapshotable<int> {
   int grid_size_;
   std::vector<int> hole_positions_;
   int goal_position_;
-  bool done_;
 };
 }  // namespace talawa::env

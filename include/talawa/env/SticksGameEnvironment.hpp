@@ -14,26 +14,19 @@ class StickGameEnv : public IEnvironment, public Snapshotable<uint8_t> {
  private:
   int _num_sticks_remaining;
   int _num_sticks_initial;
-  int _active_agent_index;
 
  public:
   enum Player : AgentID { PLAYER_1, PLAYER_2 };
   // Default to the classic "Game of 21"
-  StickGameEnv(int num_sticks = 21) {
-    agent_order_ = {Player::PLAYER_1, Player::PLAYER_2};
+  StickGameEnv(int num_sticks = 21)
+      : IEnvironment({Player::PLAYER_1, Player::PLAYER_2}) {
     _num_sticks_initial = num_sticks;
     _num_sticks_remaining = num_sticks;
-    _active_agent_index = 0;
-    cumulative_rewards_[Player::PLAYER_1] = 0.0f;
-    cumulative_rewards_[Player::PLAYER_2] = 0.0f;
   }
 
   // 1. Reset the game
   void reset(size_t random_seed = 42) override {
     _num_sticks_remaining = 21;
-    _active_agent_index = 0;
-    cumulative_rewards_[Player::PLAYER_1] = 0.0f;
-    cumulative_rewards_[Player::PLAYER_2] = 0.0f;
     // Clear previous reports
     for (auto& [id, data] : agents_data_) {
       data.report = StepReport{};
@@ -82,7 +75,7 @@ class StickGameEnv : public IEnvironment, public Snapshotable<uint8_t> {
       cumulative_rewards_[active_agent] += -1.0f;
 
       // Other agent wins
-      auto other_agent_index = (_active_agent_index + 1) % 2;
+      auto other_agent_index = (active_agent_index_ + 1) % 2;
       AgentID other_agent = agent_order_[other_agent_index];  // Switch agent
       agents_data_.at(other_agent).report.reward = 1.0f;
       agents_data_.at(other_agent).report.episode_status =
@@ -96,7 +89,10 @@ class StickGameEnv : public IEnvironment, public Snapshotable<uint8_t> {
     }
 
     // Switch active agent
-    _active_agent_index = (_active_agent_index + 1) % 2;
+    active_agent_index_ = (active_agent_index_ + 1) % 2;
+
+    // Check for termination
+    done_ = (_num_sticks_remaining <= 0);
   }
 
   // 3. Get Legal Moves (Critical for this game!)
@@ -120,9 +116,6 @@ class StickGameEnv : public IEnvironment, public Snapshotable<uint8_t> {
   void restore(const uint8_t& state) override {
     _num_sticks_remaining = static_cast<int>(state);
   }
-  AgentID get_active_agent() const override {
-    return agent_order_[_active_agent_index];
-  }
   Space get_action_space(const AgentID&) const override {
     auto space = Space::Discrete(3);  // 0,1,2 represent taking 1,2,3 sticks
     return space;
@@ -139,12 +132,6 @@ class StickGameEnv : public IEnvironment, public Snapshotable<uint8_t> {
   }
   std::unique_ptr<IEnvironment> clone() const override {
     return std::make_unique<StickGameEnv>(*this);
-  }
-
-  bool is_done() const override { return _num_sticks_remaining <= 0; }
-
-  bool is_agent_available(const AgentID& agent_id) const override {
-    return _num_sticks_remaining > 0;
   }
 };
 

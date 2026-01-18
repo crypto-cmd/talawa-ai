@@ -107,6 +107,22 @@ class NeuralNetwork : public rl::agent::ILearnable {
     }
   }
 
+  void print() const {
+    std::cout << "NeuralNetwork: \n";
+    std::cout << "Input Shape: (" << input_shape.height << ", "
+              << input_shape.width << ", " << input_shape.depth << ")\n";
+    std::cout << "Total Parameters: " << _totalParameters << "\n";
+    std::cout << "Layers:\n";
+    for (size_t i = 0; i < layers.size(); ++i) {
+      std::cout << " Layer " << i + 1 << ": " << layers[i]->info() << "\n";
+      for (const auto& param : layers[i]->getParameters()) {
+        std::cout << "  Param Shape: (" << param->rows << ", " << param->cols
+                  << ")\n";
+        param->print();
+      }
+    }
+  }
+
  private:
   Shape get_input_shape() const;
   void recalcTotalParameters();  // Recompute _totalParameters from layers

@@ -15,13 +15,24 @@ int main() {
 
   // Create a Q-learning agent
   rl::agent::DQNConfig config{.num_actions = static_cast<int>(as.n())};
-  config.sample_batch_size = 64;
-  config.memory_warmup_size = 5000;
-  config.memory_size = 15000;
-  config.target_update_interval = 150;
-  config.learning_rate = 0.1f;
+  // 1. Learning Dynamics
+  config.learning_rate = 0.001f;  // Standard for Adam. 0.1 is WAY too high.
+  config.gamma = 0.99f;           // Look ~100 steps into the future
+  config.epsilon = 1.0f;          // Start full random
 
-    config.use_double_dqn = false;
+  // 2. Stability (The "Soft Update" Fix)
+  config.target_update_type = rl::agent::TargetNetworkUpdateType::SOFT;
+  config.tau = 0.005f;                // Move target 0.5% every step
+  config.target_update_interval = 1;  // Update every step
+
+  // 3. Architecture
+  config.use_double_dqn = true;  // Prevents overestimation
+  config.use_dueling = true;     // Faster convergence
+
+  // 4. Memory
+  config.memory_size = 50000;        // Remember the "bad old days"
+  config.memory_warmup_size = 1000;  // Start training sooner
+  config.sample_batch_size = 64;     // Robust gradient estimation
 
   auto builder = nn::NeuralNetworkBuilder::create({1, 1, 4});
   builder
@@ -30,7 +41,7 @@ int main() {
           .act = talawa::core::Activation::TANH,
           .init = talawa::core::Initializer::HE_NORMAL,
       })
-      .setLossFunction(std::make_unique<nn::loss::MeanSquaredError>())
+      .setLossFunction(std::make_unique<nn::loss::HuberLoss>())
       .setOptimizer(std::make_unique<core::Adam>());
   rl::agent::DQNAgent ai(builder, config);
 
@@ -39,7 +50,7 @@ int main() {
 
   auto tournamentConfig = talawa::arena::Arena::TournamentConfig{
       .rounds = 10,
-      .max_steps = 30,
+      .max_steps = 1500,
   };
   arena.tournament(tournamentConfig).print();
 
@@ -55,7 +66,8 @@ int main() {
       std::cout << "\nIntermediate Tournament Results after " << episode + 1
                 << " episodes:\n";
       auto tournamentResults = arena.tournament(tournamentConfig);
-      if (tournamentResults.agents[0].avg_reward() >= 500.0f) {
+      if (tournamentResults.agents[0].avg_reward() >=
+          tournamentConfig.max_steps * 0.8) {
         std::cout << "Environment solved in " << episode + 1 << " episodes!\n";
         tournamentResults.print();
         break;
@@ -69,5 +81,12 @@ int main() {
 
   std::cout << "Done!\n";
   ai.print();
+
+  // Final evaluation with rendering
+  visualizer::IRenderer* renderer = &cartpole_env;
+  renderer->initRendering();
+  while (renderer->is_active()) {
+    arena.match(tournamentConfig.max_steps * 2, false, renderer);
+  }
   return 0;
 }

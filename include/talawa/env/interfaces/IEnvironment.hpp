@@ -37,13 +37,25 @@ class IEnvironment {
   std::unordered_map<AgentID, float> cumulative_rewards_;
 
   int num_agents_;
+  bool done_ = false;
+  int active_agent_index_;
 
  public:
+  IEnvironment(std::vector<AgentID> agent_order)
+      : agent_order_(std::move(agent_order)),
+        num_agents_(static_cast<int>(agent_order_.size())),
+        active_agent_index_(agent_order_[0]) {
+    for (const auto& agent_id : agent_order_) {
+      cumulative_rewards_[agent_id] = 0.0f;
+    }
+  };
   virtual ~IEnvironment() = default;
 
   // --- Core Agent-Environment Interaction Methods ---
   virtual void reset(size_t random_seed = 42) = 0;
-  virtual AgentID get_active_agent() const = 0;
+  virtual AgentID get_active_agent() const {
+    return agent_order_[active_agent_index_];
+  }
 
   // --- State & Observation Methods ---
   virtual Observation observe(const AgentID&) const = 0;
@@ -69,7 +81,7 @@ class IEnvironment {
     return 0.0f;
   }
 
-  virtual bool is_done() const = 0;
+  virtual bool is_done() const { return done_; };
 
   virtual void register_agent(const AgentID& agent_id, rl::agent::IAgent& agent,
                               std::string name = "") {

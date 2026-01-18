@@ -2,9 +2,7 @@
 
 namespace talawa::env {
 
-Corridor::Corridor() : position(0), done_(false) {
-  agent_order_ = {0};  // Single agent with ID 0
-  cumulative_rewards_[0] = 0.0f;
+Corridor::Corridor() : IEnvironment({0}), position(0) {
   reset();
 }
 Corridor::~Corridor() {}
@@ -15,13 +13,10 @@ void Corridor::reset(size_t random_seed) {
   cumulative_rewards_[0] = 0.0f;  // Reset cumulative reward for the agent
 }
 
-talawa::env::AgentID Corridor::get_active_agent() const {
-  return agent_order_[0];
-}
-
 talawa::env::Observation Corridor::observe(const AgentID&) const {
   core::Matrix obs(1, 1);
-  obs(0, 0) = static_cast<float>(position) / static_cast<float>(goal);
+  obs(0, 0) =
+      (static_cast<float>(position) / static_cast<float>(goal)) * 2.0f - 1.0f;
   return Observation(obs);
 }
 
@@ -56,9 +51,6 @@ void Corridor::step(const Action& action) {
   cumulative_rewards_[active_agent] +=
       agents_data_.at(active_agent).report.reward;
 }
-StepReport Corridor::last(const AgentID&) const {
-  return agents_data_.at(0).report;
-}
 
 Space Corridor::get_action_space(const AgentID&) const {
   return Space::Discrete(2);  // Two actions: left (0), right (1)
@@ -70,5 +62,4 @@ Space Corridor::get_observation_space(const AgentID&) const {
 std::unique_ptr<IEnvironment> Corridor::clone() const {
   return std::make_unique<Corridor>(*this);
 }
-bool Corridor::is_done() const { return done_; }
 }  // namespace talawa::env

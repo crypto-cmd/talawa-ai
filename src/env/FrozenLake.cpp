@@ -6,13 +6,12 @@ namespace talawa::env {
 // [A, 1, 2, 3, 4, 5(O), 6, 7(O), 8, 9, 10, 11(O), 12(O), 13, 14, G]
 
 FrozenLake::FrozenLake()
-    : agent_position_(0),
+    : IEnvironment({0}),
+      agent_position_(0),
       grid_size_(16),
       hole_positions_{5, 7, 11, 12},
-      goal_position_(15),
-      done_(false) {
-  agent_order_ = {0};  // Single agent with ID 0
-  cumulative_rewards_[0] = 0.0f;
+      goal_position_(15) {
+  reset();
 }
 void FrozenLake::reset(size_t random_seed) {
   agent_position_ = 0;
@@ -23,7 +22,6 @@ void FrozenLake::reset(size_t random_seed) {
     data.report = StepReport{};
   }
 }
-AgentID FrozenLake::get_active_agent() const { return agent_order_[0]; }
 Observation FrozenLake::observe(const AgentID&) const {
   core::Matrix obs(1, 1);
   obs(0, 0) = static_cast<float>(agent_position_);

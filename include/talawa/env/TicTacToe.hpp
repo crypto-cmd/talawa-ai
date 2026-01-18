@@ -6,7 +6,6 @@ class TicTacToe : public IEnvironment {
   TicTacToe();
   ~TicTacToe() override = default;
   void reset(size_t random_seed = 42) override;
-  AgentID get_active_agent() const override;
   Observation observe(const AgentID&) const override;
   void step(const Action& action) override;
   Space get_action_space(const AgentID&) const override;
