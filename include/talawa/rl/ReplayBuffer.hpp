@@ -2,14 +2,16 @@
 
 #include <vector>
 
+#include "talawa/core/Matrix.hpp"
+#include "talawa/env/interfaces/IEnvironment.hpp"
 #include "talawa/env/types.hpp"
 namespace talawa::rl::memory {
 struct Experience {
   core::Matrix states;
   core::Matrix next_states;
   core::Matrix actions;
-  core::Matrix rewards;
-  core::Matrix dones;
+  std::vector<float> rewards;
+  std::vector<env::EpisodeStatus> dones;
 };
 
 class ReplayBuffer {

@@ -8,16 +8,15 @@ void ReplayBuffer::add(const env::Transition& transition) {
     buffer_.next_states =
         core::Matrix::zeros(max_size_, transition.next_state.size());
     buffer_.actions = core::Matrix::zeros(max_size_, transition.action.size());
-    buffer_.rewards = core::Matrix::zeros(max_size_, 1);
-    buffer_.dones = core::Matrix::zeros(max_size_, 1);
+    buffer_.rewards = std::vector<float>(max_size_);
+    buffer_.dones = std::vector<env::EpisodeStatus>(max_size_);
   }
   // add to the batch matrix
   buffer_.states.setRow(cursor_, transition.state.flatten());
   buffer_.next_states.setRow(cursor_, transition.next_state.flatten());
   buffer_.actions.setRow(cursor_, transition.action.flatten());
-  buffer_.rewards(cursor_, 0) = transition.reward;
-  buffer_.dones(cursor_, 0) =
-      (transition.status != env::EpisodeStatus::Running) ? 1.0f : 0.0f;
+  buffer_.rewards[cursor_] = transition.reward;
+  buffer_.dones[cursor_] = transition.status;
   if (size_ < max_size_) {
     size_++;
   }
@@ -34,8 +33,8 @@ Experience ReplayBuffer::sample(size_t batch_size) {
     sample_.next_states =
         core::Matrix::zeros(batch_size, buffer_.next_states.cols);
     sample_.actions = core::Matrix::zeros(batch_size, buffer_.actions.cols);
-    sample_.rewards = core::Matrix::zeros(batch_size, 1);
-    sample_.dones = core::Matrix::zeros(batch_size, 1);
+    sample_.rewards = std::vector<float>(batch_size);
+    sample_.dones = std::vector<env::EpisodeStatus>(batch_size);
     expected_sample_size_ =
         static_cast<int>(batch_size);  // Update expected size
   }
@@ -50,8 +49,8 @@ Experience ReplayBuffer::sample(size_t batch_size) {
         current, buffer_.next_states.slice(index, index + 1).flatten());
     sample_.actions.setRow(current,
                            buffer_.actions.slice(index, index + 1).flatten());
-    sample_.rewards(current, 0) = buffer_.rewards(index, 0);
-    sample_.dones(current, 0) = buffer_.dones(index, 0);
+    sample_.rewards[current] = buffer_.rewards[index];
+    sample_.dones[current] = buffer_.dones[index];
     current++;
   }
   return sample_;

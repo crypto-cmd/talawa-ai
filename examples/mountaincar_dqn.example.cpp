@@ -59,7 +59,7 @@ int main() {
   };
   arena.tournament(tournamentConfig).print();
 
-  auto num_episodes = 2000;
+  auto num_episodes = 500;
   for (int episode = 0; episode < num_episodes; ++episode) {
     arena.match(matchConfig);  // Train for 2000 episodes
     std::cout << "Completed episode " << episode + 1 << "/" << num_episodes

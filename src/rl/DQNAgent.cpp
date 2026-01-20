@@ -224,11 +224,11 @@ void DQNAgent::update(const env::Transition& transition) {
     }
   });
   auto target_q_values = q_current.map([&](int i, int j, float val) {
-    auto reward = batch.rewards(i, 0);
-    auto done = batch.dones(i, 0);
+    auto reward = batch.rewards[i];
+    auto done = batch.dones[i];
     if (static_cast<int>(j) == static_cast<int>(batch.actions(i, 0))) {
-      // If episode is done, there's no future value
-      if (done > 0.5f) {
+      // If episode is terminated, there's no future value
+      if (done == env::EpisodeStatus::Terminated) {
         return reward;
       }
       return reward + config.gamma * future_values(i, 0);
