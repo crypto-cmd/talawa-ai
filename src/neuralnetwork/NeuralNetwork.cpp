@@ -107,8 +107,11 @@ NeuralNetworkBuilder& NeuralNetworkBuilder::inject(
     std::function<std::pair<std::unique_ptr<ILayer>, Shape>(const Shape&)>
         layer_creator) {
   prebuild();
-  const auto& prebuilt_shape = prebuilt_layers.back()->getOutputShape();
-  prebuilt_layers.push_back(layer_creator(prebuilt_shape).first);
+  const auto& input_shape =
+      num_prebuilt_standard_layers_ == 0
+          ? this->input_shape
+          : prebuilt_layers.back()->getOutputShape();
+  prebuilt_layers.push_back(layer_creator(input_shape).first);
   return *this;
 }
 

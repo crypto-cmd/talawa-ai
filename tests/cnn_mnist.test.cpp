@@ -78,14 +78,15 @@ int main() {
                        .neurons = 10,
                        .act = Activation::SOFTMAX,
                    })
-                   .setOptimizer(std::make_unique<Adam>(0.001f))
+                   .setOptimizer(std::make_unique<Adam>())
                    .setLossFunction(std::make_unique<loss::MeanSquaredError>())
                    .build();
+  model->set_learning_rate(0.001f);  // Adam prefers lower LR
 
   // 2. Load Data
   // Ensure mnist_train.csv is in your build folder
   try {
-    auto data = utils::DataLoader::loadCSV("mnist_train.csv", 0, 10, 255.0f);
+    auto data = utils::DataLoader::loadCSV("./build/mnist_train.csv", 0, 10, 255.0f);
 
     int epochs = 5;
     int batch_size = 128;
@@ -94,6 +95,13 @@ int main() {
 
     // 3. Train Loop
     for (int epoch = 0; epoch < epochs; ++epoch) {
+      if (epoch == 15) {
+        // Learning rate decay
+        model->set_learning_rate(model->get_learning_rate() * 0.1f);
+        std::cout << "Learning rate decayed to " << model->get_learning_rate()
+                  << " at epoch " << epoch + 1 << std::endl;
+        batch_size = 512;  // Increase batch size for stability
+      }
       data.shuffle();
       float total_loss = 0.0f;
 
@@ -129,7 +137,7 @@ int main() {
 
   // Load the separate test file
   auto test_data =
-      talawa::utils::DataLoader::loadCSV("mnist_test.csv", 0, 10, 255.0f);
+      talawa::utils::DataLoader::loadCSV("./build/mnist_test.csv", 0, 10, 255.0f);
 
   std::cout << "Evaluating on " << test_data.features.rows << " test images..."
             << std::endl;

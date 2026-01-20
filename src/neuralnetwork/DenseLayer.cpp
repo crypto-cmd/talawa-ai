@@ -1,8 +1,8 @@
 #include "talawa/neuralnetwork/DenseLayer.hpp"
 
 #include <iostream>
-#include <sstream>
 #include <memory>
+#include <sstream>
 
 namespace talawa {
 namespace nn {

@@ -36,6 +36,8 @@ class Loss {
 // include/talawa/neuralnetwork/Loss.hpp
 
 class HuberLoss : public Loss {
+ private:
+  float _delta = 1.f;  // Can be tunable
  public:
   float calculate(const Matrix& prediction, const Matrix& target) override;
   Matrix gradient(const Matrix& prediction, const Matrix& target) override;

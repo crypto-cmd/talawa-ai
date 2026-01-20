@@ -16,6 +16,7 @@ using namespace talawa::core;
 Dataset DataLoader::loadCSV(const std::string& path, int label_index,
                             int num_classes, float scale, bool skip_header) {
   std::ifstream file(path);
+  std::cout << "[DataLoader] Opening file: " << path << std::endl;
   if (!file.is_open()) {
     throw std::runtime_error("DataLoader: Could not open file " + path);
   }

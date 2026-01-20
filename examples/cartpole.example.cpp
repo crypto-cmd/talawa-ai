@@ -36,11 +36,6 @@ int main() {
 
   auto builder = nn::NeuralNetworkBuilder::create({1, 1, 4});
   builder
-      .add(nn::DenseLayerConfig{
-          .neurons = 64,
-          .act = talawa::core::Activation::TANH,
-          .init = talawa::core::Initializer::HE_NORMAL,
-      })
       .setLossFunction(std::make_unique<nn::loss::HuberLoss>())
       .setOptimizer(std::make_unique<core::Adam>());
   rl::agent::DQNAgent ai(builder, config);

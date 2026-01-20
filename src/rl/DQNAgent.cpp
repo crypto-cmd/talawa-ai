@@ -189,6 +189,7 @@ env::Action DQNAgent::act(const env::Observation& observation,
 }
 void DQNAgent::update(const env::Transition& transition) {
   replay_buffer.add(transition);
+  steps_done++;
 
   if (steps_done % config.train_frequency != 0) {
     return;  // Skip training this step
@@ -239,7 +240,6 @@ void DQNAgent::update(const env::Transition& transition) {
 
   auto newq = q_network->predict(batch.states);
 
-  steps_done++;
   updateTargetNetwork();
 }
 void DQNAgent::updateTargetNetwork() {

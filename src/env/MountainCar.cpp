@@ -75,7 +75,7 @@ void MountainCar::step(const Action& action) {
   bool reached_goal = (position >= goal_position);
   done_ = reached_goal;
 
-  float reward = -0.01f;
+  float reward = -1.f;
   if (reached_goal) reward = 0.0f;  // Alternatively give +100 here
 
   cumulative_rewards_[active_agent] += reward;
@@ -92,7 +92,7 @@ Space MountainCar::get_action_space(const AgentID&) const {
 
 Space MountainCar::get_observation_space(const AgentID&) const {
   // 2 Continuous variables
-  return Space::Continuous({2}, {-1.2f, -0.07f}, {0.6f, 0.07f});
+  return Space::Continuous({2}, {-1.f, 1.f}, {-1.f, 1.f});
 }
 
 std::unique_ptr<IEnvironment> MountainCar::clone() const {

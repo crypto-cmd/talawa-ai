@@ -188,17 +188,13 @@ Matrix CrossEntropyWithLogitsLoss::gradient(const Matrix& prediction,
 }
 
 float HuberLoss::calculate(const Matrix& prediction, const Matrix& target) {
-  float delta = 1.0f;  // Can be tunable
   float total_loss = prediction.reduce<float>(
       [&](float acc, int row, int col, float pred_val) {
         float true_val = target(row, col);
         float error = std::abs(true_val - pred_val);
 
-        if (error <= delta) {
-          return acc + 0.5f * error * error;
-        } else {
-          return acc + delta * (error - 0.5f * delta);
-        }
+        return error <= _delta ? acc + 0.5f * error * error
+                               : acc + _delta * (error - 0.5f * _delta);
       },
       0.0f);
 
@@ -210,7 +206,6 @@ Matrix HuberLoss::gradient(const Matrix& prediction, const Matrix& target) {
   //   error              if |error| <= delta
   //   delta * sign(error)  otherwise
 
-  float delta = 1.0f;
   float n = static_cast<float>(prediction.rows * prediction.cols);
   // Usually we average the gradient over the batch
   float scale = 1.0f / n;
@@ -219,10 +214,10 @@ Matrix HuberLoss::gradient(const Matrix& prediction, const Matrix& target) {
     float true_val = target(row, col);
     float diff = pred_val - true_val;  // (y - t)
 
-    if (std::abs(diff) <= delta) {
+    if (std::abs(diff) <= _delta) {
       return diff * scale;
     } else {
-      return (diff > 0 ? delta : -delta) * scale;
+      return (diff > 0 ? _delta : -_delta) * scale;
     }
   });
 }

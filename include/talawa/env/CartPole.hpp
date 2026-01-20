@@ -33,7 +33,6 @@ class CartPole : public IEnvironment, public visualizer::IRenderer {
 
   Observation observe(const AgentID&) const override;
   void step(const Action& action) override;
-  StepReport last(const AgentID&) const override;
 
   Space get_action_space(const AgentID&) const override;
   Space get_observation_space(const AgentID&) const override;
